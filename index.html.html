@@ -1,0 +1,2458 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة أمن الأوطان - ERP إدارة الحراسات الأمنية والتحضير السحابي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- استدعاء مكتبة Firebase السحابية -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
+        body { font-family: 'Cairo', sans-serif; background-color: #f1f5f9; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        .glow-card { transition: all 0.3s ease; }
+        .glow-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.1); }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 h-screen overflow-hidden">
+
+    <!-- شاشة تسجيل الدخول -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden bg-slate-900">
+        <div class="relative bg-white/90 backdrop-blur-md rounded-2xl max-w-md w-full overflow-hidden shadow-2xl border border-white/20 z-10 flex flex-col">
+            <div class="bg-slate-900/90 p-8 text-center border-b border-slate-800 backdrop-blur-md">
+                <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-3xl shadow-lg">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-1">منصة أمن الأوطان</h2>
+                <p class="text-xs text-slate-300">نظام التشغيل وإدارة العمليات الميدانية والتحضير السحابي</p>
+            </div>
+            <form onsubmit="handleLogin(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">اسم المستخدم</label>
+                    <input type="text" id="login-username" placeholder="أدخل اسم المستخدم" required class="w-full p-3 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-blue-500 bg-white/90">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور</label>
+                    <input type="password" id="login-password" placeholder="أدخل كلمة المرور الصحيحة" required class="w-full p-3 border border-slate-300 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-blue-500 bg-white/90">
+                </div>
+                <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition shadow-md">
+                    تسجيل الدخول للنظام
+                </button>
+            </form>
+            <div class="py-3 px-6 bg-slate-100/90 border-t border-slate-200 flex items-center justify-center space-x-2 space-x-reverse">
+                <div class="w-6 h-6 rounded-full bg-red-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-md">
+                    ah
+                </div>
+                <p class="text-[11px] font-bold text-slate-600 tracking-wider">Designed and executed by Ahmed Hegazy</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- تطبيق المنصة الرئيسي -->
+    <div id="app-container" class="flex h-screen overflow-hidden hidden">
+        
+        <!-- الشريط الجانبي -->
+        <aside id="sidebar" class="w-64 bg-slate-900 text-white flex flex-col justify-between z-20 shadow-lg">
+            <div>
+                <div class="p-4 flex items-center justify-between border-b border-slate-800">
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <img src="watermarked_img_8448020907437168992.jpg" alt="شعار أمن الأوطان" class="w-10 h-10 object-cover rounded-full border border-emerald-500 shadow" onerror="this.src='https://via.placeholder.com/40'">
+                        <div>
+                            <h1 class="font-bold text-lg leading-none text-white">أمن الأوطان</h1>
+                            <span class="text-xs text-slate-400">إدارة الحراسات الأمنية</span>
+                        </div>
+                    </div>
+                </div>
+
+                <nav class="p-3 space-y-1 custom-scrollbar overflow-y-auto max-h-[calc(100vh-140px)]" id="sidebar-nav">
+                    <button onclick="switchTab('dashboard-section')" id="nav-dashboard-section" class="sidebar-item w-full flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition active bg-blue-600 text-white">
+                        <i class="fa-solid fa-chart-pie w-6"></i>
+                        <span class="font-semibold text-sm">لوحة العمليات</span>
+                    </button>
+                    <button onclick="switchTab('projects-section')" id="nav-projects-section" class="sidebar-item w-full flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                        <i class="fa-solid fa-building text-slate-400 w-6"></i>
+                        <span class="font-semibold text-sm">إدارة المشاريع وشعاراتها</span>
+                    </button>
+                    <button onclick="switchTab('attendance-section')" id="nav-attendance-section" class="sidebar-item w-full flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                        <i class="fa-solid fa-clipboard-user text-slate-400 w-6"></i>
+                        <span class="font-semibold text-sm">التحضير الميداني والورديات</span>
+                    </button>
+                    <button onclick="switchTab('guards-section')" id="nav-guards-section" class="sidebar-item w-full flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                        <i class="fa-solid fa-user-shield text-slate-400 w-6"></i>
+                        <span class="font-semibold text-sm">سجل الحراس</span>
+                    </button>
+                    <button onclick="switchTab('incidents-section')" id="nav-incidents-section" class="sidebar-item w-full flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                        <i class="fa-solid fa-triangle-exclamation text-slate-400 w-6"></i>
+                        <span class="font-semibold text-sm">سجل البلاغات والطوارئ</span>
+                    </button>
+                    <button onclick="switchTab('radar-section')" id="nav-radar-section" class="sidebar-item w-full flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                        <i class="fa-solid fa-satellite-dish text-slate-400 w-6"></i>
+                        <span class="font-semibold text-sm">رادار التمركز الميداني</span>
+                    </button>
+                    <button onclick="switchTab('library-section')" id="nav-library-section" class="sidebar-item w-full flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                        <i class="fa-solid fa-book-medical text-slate-400 w-6"></i>
+                        <span class="font-semibold text-sm">المكتبة الرقمية والإسعافات</span>
+                    </button>
+                    <button onclick="switchTab('project-reports-section')" id="nav-project-reports-section" class="sidebar-item w-full flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition">
+                        <i class="fa-solid fa-file-invoice-dollar text-slate-400 w-6"></i>
+                        <span class="font-semibold text-sm">تقارير المشاريع والتايم شيت</span>
+                    </button>
+                    <button onclick="switchTab('users-section')" id="nav-users-section" class="sidebar-item w-full flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition hidden">
+                        <i class="fa-solid fa-sitemap text-slate-400 w-6"></i>
+                        <span class="font-semibold text-sm">الهيكل التنظيمي والصلاحيات</span>
+                    </button>
+                </nav>
+            </div>
+
+            <div class="p-3 border-t border-slate-800 bg-slate-950 space-y-2">
+                <div class="flex items-center justify-between px-2 text-xs text-slate-400">
+                    <span id="current-user-name">admin</span>
+                    <button onclick="logout()" class="text-rose-400 hover:text-rose-300 font-bold"><i class="fa-solid fa-power-off ml-1"></i>خروج</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- المحتوى الرئيسي -->
+        <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <header class="bg-slate-900 text-white border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-md">
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <span class="flex h-3 w-3 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                    <h2 id="page-title" class="text-lg font-bold">غرفة العمليات المركزية والتحكم الميداني</h2>
+                </div>
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <span class="text-xs font-mono bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300" id="current-date"></span>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto p-6 bg-slate-100 space-y-6">
+                
+                <!-- 1. لوحة العمليات -->
+                <div id="dashboard-section" class="tab-content active space-y-6">
+                    <div id="tactical-alert-ticker" class="bg-slate-900 border-r-4 border-amber-500 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between">
+                        <div class="flex items-center space-x-3 space-x-reverse">
+                            <div class="p-2.5 bg-slate-800 rounded-xl text-amber-400"><i class="fa-solid fa-tower-broadcast text-lg"></i></div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-300">حالة الاستعداد الأمني الميداني</h4>
+                                <p class="text-xs font-semibold text-white mt-0.5" id="tactical-alert-text">جاري فحص حالة الحراسات والاعتمادات الميدانية...</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <button onclick="exportSystemBackupJson()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow transition flex items-center">
+                                <i class="fa-solid fa-download ml-1.5"></i> نسخ احتياطي سحابي (JSON)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm glow-card flex items-center space-x-4 space-x-reverse">
+                            <div class="p-4 bg-blue-50 text-blue-600 rounded-2xl"><i class="fa-solid fa-building text-2xl"></i></div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-400">إجمالي المشاريع</p>
+                                <h3 class="text-2xl font-extrabold text-slate-800 mt-0.5" id="dash-projects-count">0</h3>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm glow-card flex items-center space-x-4 space-x-reverse">
+                            <div class="p-4 bg-emerald-50 text-emerald-600 rounded-2xl"><i class="fa-solid fa-user-shield text-2xl"></i></div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-400">إجمالي القوة (الحراس)</p>
+                                <h3 class="text-2xl font-extrabold text-emerald-600 mt-0.5" id="dash-guards-count">0</h3>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm glow-card flex items-center space-x-4 space-x-reverse">
+                            <div class="p-4 bg-rose-50 text-rose-600 rounded-2xl"><i class="fa-solid fa-user-xmark text-2xl"></i></div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-400">الغياب اليومي المسجل</p>
+                                <h3 class="text-2xl font-extrabold text-rose-600 mt-0.5" id="dash-absent-count">0</h3>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm glow-card flex items-center space-x-4 space-x-reverse">
+                            <div class="p-4 bg-amber-50 text-amber-600 rounded-2xl"><i class="fa-solid fa-plane-departure text-2xl"></i></div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-400">إجازات اليوم</p>
+                                <h3 class="text-2xl font-extrabold text-amber-600 mt-0.5" id="dash-leave-count">0</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-4 border-b pb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800">شبكة المتابعة الميدانية الذكية للمشاريع</h3>
+                                <p class="text-xs text-slate-500">اختر أي مشروع أدناه لعرض تفاصيل حراسه والإحصائيات الخاصة به فوراً</p>
+                            </div>
+                            <div class="flex items-center space-x-3 space-x-reverse">
+                                <label class="text-xs font-bold text-slate-700">اختر المشروع:</label>
+                                <select id="dash-project-selector" onchange="onDashProjectChange()" class="p-2.5 border border-slate-300 rounded-xl font-bold text-sm bg-blue-50 text-blue-900 min-w-[240px] focus:ring-2 focus:ring-blue-500"></select>
+                            </div>
+                        </div>
+
+                        <div id="selected-project-details" class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
+                                <span class="text-xs font-bold text-blue-600 bg-blue-100 px-2.5 py-1 rounded-lg">بيانات المشروع</span>
+                                <h4 class="font-bold text-slate-800 text-base mt-1" id="dp-name">--</h4>
+                                <p class="text-xs text-slate-600"><strong>الموقع:</strong> <span id="dp-location">--</span></p>
+                                <p class="text-xs text-slate-600"><strong>المشرف المسؤول:</strong> <span id="dp-supervisor">--</span></p>
+                            </div>
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
+                                <span class="text-xs font-bold text-emerald-600 bg-emerald-100 px-2.5 py-1 rounded-lg">نظام الورديات والقوة</span>
+                                <h4 class="font-bold text-emerald-700 text-sm mt-1" id="dp-shifts">--</h4>
+                                <p class="text-xs text-slate-600 mt-1">إجمالي الحراس: <span id="dp-guards-count" class="font-bold text-blue-700">0 حارس</span></p>
+                            </div>
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2 flex flex-col justify-between">
+                                <span class="text-xs font-bold text-purple-600 bg-purple-100 px-2.5 py-1 rounded-lg">إجراء تشغيلي سريع</span>
+                                <p class="text-xs text-slate-600">انتقل مباشرة لتحضير حراس هذا المشروع أو تصدير تقريره الشهري.</p>
+                                <button onclick="jumpToAttendanceForSelected()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition shadow">
+                                    الانتقال للتحضير الميداني لهذا المشروع
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t">
+                            <h4 class="text-sm font-bold text-slate-700 mb-3">عينة من حراس المشروع المختار:</h4>
+                            <div class="overflow-hidden border border-slate-200 rounded-2xl">
+                                <table class="w-full text-right border-collapse">
+                                    <thead class="bg-slate-100 text-slate-600 text-xs font-bold uppercase border-b">
+                                        <tr>
+                                            <th class="p-3">#</th>
+                                            <th class="p-3">اسم الحارس</th>
+                                            <th class="p-3">الهوية الوطنية</th>
+                                            <th class="p-3">رقم الجوال</th>
+                                            <th class="p-3">الحالة</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dash-project-guards-body" class="divide-y divide-slate-200 text-xs"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. إدارة المشاريع وشعاراتها -->
+                <div id="projects-section" class="tab-content space-y-6">
+                    
+                    <!-- لوحة إدارة شعار الترويسة العامة (محقونة ومضمونة الظهور حصرياً لـ admin في أعلى صفحة المشاريع) -->
+                    <div id="security-admin-settings-panel" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4" style="display: block !important;">
+                        <div class="flex justify-between items-center border-b pb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800">إدارة شعار الترويسة العامة للتقارير (خاص بـ admin)[cite: 3]</h3>
+                                <p class="text-xs text-slate-500 mt-1">تخصيص شعار الشركة العام ليظهر في ترويسة جميع التقارير المطبوعة</p>
+                            </div>
+                            <button onclick="openAddProjectModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center shadow">
+                                <i class="fa-solid fa-plus ml-2"></i> إضافة مشروع جديد
+                            </button>
+                        </div>
+                        
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-xs">شعار الشركة / المنصة العام (الثابت في كل الترويسات):</h4>
+                                <p class="text-[11px] text-slate-500">يظهر في الجهة اليمنى من ترويسة جميع التقارير والطباعة</p>
+                            </div>
+                            <div class="flex items-center space-x-2 space-x-reverse min-w-[320px]">
+                                <input type="text" id="company-logo-input" placeholder="رابط الشعار أو ارفع ملف..." class="p-2 border border-slate-300 rounded-xl text-xs bg-white flex-1">
+                                <input type="file" id="company-logo-file" accept="image/*" onchange="handleGlobalLogoUpload(event)" class="hidden">
+                                <button type="button" onclick="document.getElementById('company-logo-file').click()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap"><i class="fa-solid fa-upload ml-1"></i> رفع</button>
+                                <button type="button" onclick="saveCompanyLogo()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap">حفظ</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-right border-collapse">
+                            <thead class="bg-slate-100 text-slate-600 text-xs font-bold uppercase border-b">
+                                <tr>
+                                    <th class="p-4">اسم المشروع</th>
+                                    <th class="p-4">الموقع / المدينة</th>
+                                    <th class="p-4">المشرف المسؤول</th>
+                                    <th class="p-4">نظام الورديات</th>
+                                    <th class="p-4">شعار المشروع الخاص</th>
+                                    <th class="p-4">عدد الحراس</th>
+                                    <th class="p-4">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="projects-table-body" class="divide-y divide-slate-200 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 3. التحضير الميداني والورديات -->
+                <div id="attendance-section" class="tab-content space-y-6">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex items-center space-x-4 space-x-reverse flex-1 min-w-[280px]">
+                            <label class="text-sm font-bold text-slate-700 whitespace-nowrap">اختر المشروع:</label>
+                            <select id="attendance-project-select" onchange="onAttendanceProjectChange()" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-blue-900 bg-blue-50 focus:ring-2 focus:ring-blue-500"></select>
+                        </div>
+                        <div class="flex items-center space-x-3 space-x-reverse">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">تاريخ التحضير:</label>
+                                <input type="date" id="attendance-date-input" onchange="loadProjectAttendance()" class="p-2 border border-slate-300 rounded-xl text-sm font-bold bg-white">
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 space-x-reverse pt-5">
+                            <button onclick="approveAllProjectsBatch()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center shadow">
+                                <i class="fa-solid fa-check-double ml-2"></i> الاعتماد الشامل لكافة المشاريع
+                            </button>
+                            <button onclick="exportAttendancePDF()" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center shadow">
+                                <i class="fa-solid fa-file-pdf ml-2"></i> تقرير الشهر PDF
+                            </button>
+                            <button onclick="exportAttendanceExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center shadow">
+                                <i class="fa-solid fa-file-excel ml-2"></i> تقرير الشهر Excel
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex items-center space-x-3 space-x-reverse">
+                            <i class="fa-solid fa-filter text-blue-600 text-lg"></i>
+                            <label class="text-sm font-bold text-slate-800">اختر الوردية لعرض حراسها:</label>
+                            <select id="shift-filter-select" onchange="onShiftFilterChange(this.value)" class="p-2.5 border border-slate-300 rounded-xl font-bold text-sm bg-blue-50 text-blue-900 focus:ring-2 focus:ring-blue-500">
+                                <option value="all">عرض جميع الحراس (مرتبة حسب الورديات)</option>
+                                <option value="shift1">وردية 1 فقط</option>
+                                <option value="shift2">وردية 2 فقط</option>
+                                <option value="shift3">وردية 3 فقط</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button onclick="setAllGuardsPresent()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow flex items-center transition">
+                                <i class="fa-solid fa-check-double ml-1.5"></i> تحضير الكل كـ (حاضر) بضغطة واحدة
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-right border-collapse">
+                            <thead class="bg-slate-100 text-slate-600 text-xs font-bold uppercase border-b">
+                                <tr>
+                                    <th class="p-4">#</th>
+                                    <th class="p-4">اسم الحارس / الهوية</th>
+                                    <th class="p-4">رقم الجوال</th>
+                                    <th class="p-4">الوردية المسجل عليها</th>
+                                    <th class="p-4">حالة التحضير اليومي</th>
+                                    <th class="p-4">التبديل السريع (Cover / Swap)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendance-table-body" class="divide-y divide-slate-200 text-sm"></tbody>
+                        </table>
+                        <div class="p-4 bg-slate-50 border-t flex justify-between items-center">
+                            <span class="text-xs text-slate-500" id="attendance-audit-info">آخر تحديث: لم يتم الاعتماد بعد</span>
+                            <button onclick="saveAndApproveAttendance()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow flex items-center">
+                                <i class="fa-solid fa-check-circle ml-2"></i> حفظ واعتماد تحضير المشروع السحابي
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. سجل الحراس -->
+                <div id="guards-section" class="tab-content space-y-6">
+                    <div class="flex flex-wrap justify-between items-center gap-4">
+                        <div class="flex items-center space-x-4 space-x-reverse flex-1 min-w-[280px]">
+                            <h3 class="text-lg font-bold text-slate-800 whitespace-nowrap">سجل الحراس</h3>
+                            <div class="relative flex-1 max-w-md">
+                                <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                </span>
+                                <input type="text" id="guard-search-input" oninput="filterGuardsTable()" placeholder="بحث سريع بالاسم، رقم الهوية، أو الجوال..." class="w-full pr-10 pl-4 py-2 border border-slate-300 rounded-xl text-xs bg-white focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        <button onclick="openAddGuardModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center shadow whitespace-nowrap">
+                            <i class="fa-solid fa-user-plus ml-2"></i> إضافة حارس جديد للمشروع
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-right border-collapse">
+                            <thead class="bg-slate-100 text-slate-600 text-xs font-bold uppercase border-b">
+                                <tr>
+                                    <th class="p-4">الاسم الكامل</th>
+                                    <th class="p-4">الهوية الوطنية</th>
+                                    <th class="p-4">رقم الجوال</th>
+                                    <th class="p-4">المشروع المسكن عليه</th>
+                                    <th class="p-4">الوردية</th>
+                                    <th class="p-4">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="guards-table-body" class="divide-y divide-slate-200 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- سجل البلاغات والطوارئ الميدانية -->
+                <div id="incidents-section" class="tab-content space-y-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800">سجل البلاغات والطوارئ الميدانية (SOS & Incidents)</h3>
+                            <p class="text-xs text-slate-500">توثيق ومتابعة كافة الملاحظات الأمنية والحالات الطارئة في المواقع لحظياً</p>
+                        </div>
+                        <button onclick="openIncidentModal()" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center shadow">
+                            <i class="fa-solid fa-triangle-exclamation ml-2"></i> تسجيل بلاغ طارئ جديد
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-right border-collapse">
+                            <thead class="bg-slate-100 text-slate-600 text-xs font-bold uppercase border-b">
+                                <tr>
+                                    <th class="p-4">وقت البلاغ</th>
+                                    <th class="p-4">المشروع / الموقع</th>
+                                    <th class="p-4">نوع البلاغ</th>
+                                    <th class="p-4">تفاصيل البلاغ والملاحظة</th>
+                                    <th class="p-4">المسؤول / المبلغ</th>
+                                    <th class="p-4">إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="incidents-table-body" class="divide-y divide-slate-200 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- رادار التمركز الميداني التفاعلي -->
+                <div id="radar-section" class="tab-content space-y-6">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-satellite-dish text-blue-600 ml-2"></i>رادار التمركز الميداني التفاعلي</h3>
+                            <p class="text-xs text-slate-500">اختر المشروع أدناه لعرض رسم تفاعلي حي لقوة الحراسات وتوزيع الورديات</p>
+                        </div>
+                        <div class="flex items-center space-x-3 space-x-reverse min-w-[280px]">
+                            <label class="text-xs font-bold text-slate-700 whitespace-nowrap">اختر المشروع:</label>
+                            <select id="radar-project-selector" onchange="renderInteractiveRadar()" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-sm bg-blue-50 text-blue-900 focus:ring-2 focus:ring-blue-500"></select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm glow-card space-y-4 flex flex-col justify-between">
+                            <div>
+                                <span class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">تحليل القوة اليومية</span>
+                                <h4 class="font-bold text-slate-800 text-base mt-2">توزيع حالة الحضور اليومي</h4>
+                                <p class="text-xs text-slate-500">حالة الحراسات النشطة للمشروع المختار</p>
+                            </div>
+                            <div class="flex items-center justify-center py-6">
+                                <div class="relative w-40 h-40 rounded-full border-8 border-emerald-500 flex flex-col items-center justify-center bg-emerald-50 shadow-inner">
+                                    <i class="fa-solid fa-shield-halved text-emerald-600 text-2xl mb-1"></i>
+                                    <span class="text-xs font-bold text-slate-600">القوة العاملة</span>
+                                    <span class="text-xl font-extrabold text-emerald-700" id="radar-total-active">0 حراس</span>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 text-center pt-2 border-t">
+                                <div class="bg-emerald-50 p-2.5 rounded-xl">
+                                    <span class="block text-[10px] font-bold text-emerald-700">حاضر</span>
+                                    <span class="text-sm font-bold text-emerald-800" id="radar-present-count">0</span>
+                                </div>
+                                <div class="bg-rose-50 p-2.5 rounded-xl">
+                                    <span class="block text-[10px] font-bold text-rose-700">غائب</span>
+                                    <span class="text-sm font-bold text-rose-800" id="radar-absent-count">0</span>
+                                </div>
+                                <div class="bg-amber-50 p-2.5 rounded-xl">
+                                    <span class="block text-[10px] font-bold text-amber-700">إجازة</span>
+                                    <span class="text-sm font-bold text-amber-800" id="radar-leave-count">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm glow-card space-y-4">
+                            <div>
+                                <span class="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md">الموقع الميداني</span>
+                                <h4 class="font-bold text-slate-800 text-base mt-2" id="radar-prj-title">--</h4>
+                                <p class="text-xs text-slate-500" id="radar-prj-loc">الموقع: -- | المشرف: --</p>
+                            </div>
+                            <div class="space-y-3 pt-2 max-h-56 overflow-y-auto custom-scrollbar" id="radar-guards-list-container"></div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm glow-card space-y-4 flex flex-col justify-between">
+                            <div>
+                                <span class="text-[11px] font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-md">نظام المناوبات</span>
+                                <h4 class="font-bold text-slate-800 text-base mt-2">توزيع الورديات للمشروع</h4>
+                                <p class="text-xs text-slate-500">نسبة تمركز الحراس في الورديات الثلاث</p>
+                            </div>
+                            <div class="space-y-3 py-4" id="radar-shifts-bars"></div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                                <span class="text-xs text-slate-600 font-semibold">نظام التشغيل المعتمد: <span id="radar-prj-shift-type" class="font-bold text-blue-700">3 ورديات</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- المكتبة الرقمية والإسعافات الأولية التفاعلية المعتمدة -->
+                <div id="library-section" class="tab-content space-y-6">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                        <div class="border-b pb-4 flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-book-medical text-blue-600 ml-2"></i>المكتبة الرقمية للإسعافات الأولية والإرشادات التشغيلية المعتمدة</h3>
+                                <p class="text-xs text-slate-500 mt-1">دليل مرجعي فوري للحراس والمشرفين للتعامل مع الحالات الطارئة والبروتوكولات الأمنية وفق معايير الهلال الأحمر السعودي والجهات المختصة</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div onclick="openLibraryModal('first-aid')" class="bg-rose-50 p-6 rounded-2xl border border-rose-200 space-y-3 glow-card cursor-pointer flex flex-col justify-between">
+                                <div>
+                                    <div class="w-12 h-12 bg-rose-600 text-white rounded-xl flex items-center justify-center font-bold text-xl mb-3 shadow"><i class="fa-solid fa-heart-pulse"></i></div>
+                                    <h4 class="font-bold text-rose-900 text-base">الإسعافات الطارئة (First Aid)</h4>
+                                    <p class="text-xs text-rose-700 leading-relaxed mt-2">إرشادات موثوقة للتعامل الفوري مع حالات الإغماء، النزيف، الكسور، الحروق، وضربات الشمس لحين وصول الإسعاف.</p>
+                                </div>
+                                <span class="text-xs font-bold text-rose-700 flex items-center mt-4">عرض الإرشادات الطبية <i class="fa-solid fa-arrow-left mr-1.5"></i></span>
+                            </div>
+
+                            <div onclick="openLibraryModal('security-protocols')" class="bg-blue-50 p-6 rounded-2xl border border-blue-200 space-y-3 glow-card cursor-pointer flex flex-col justify-between">
+                                <div>
+                                    <div class="w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center font-bold text-xl mb-3 shadow"><i class="fa-solid fa-shield-halved"></i></div>
+                                    <h4 class="font-bold text-blue-900 text-base">البروتوكولات الأمنية الميدانية</h4>
+                                    <p class="text-xs text-blue-700 leading-relaxed mt-2">خطوات العمل المعتمدة للتعامل مع الأجسام المشبوهة، محاولات الاقتحام، الحرائق، وإطلاق الإنذارات بذكاء.</p>
+                                </div>
+                                <span class="text-xs font-bold text-blue-700 flex items-center mt-4">عرض البروتوكولات الأمنية <i class="fa-solid fa-arrow-left mr-1.5"></i></span>
+                            </div>
+
+                            <div onclick="openLibraryModal('emergency-numbers')" class="bg-emerald-50 p-6 rounded-2xl border border-emerald-200 space-y-3 glow-card cursor-pointer flex flex-col justify-between">
+                                <div>
+                                    <div class="w-12 h-12 bg-emerald-600 text-white rounded-xl flex items-center justify-center font-bold text-xl mb-3 shadow"><i class="fa-solid fa-phone-volume"></i></div>
+                                    <h4 class="font-bold text-emerald-900 text-base">أرقام الطوارئ والجهات الرسمية</h4>
+                                    <p class="text-xs text-emerald-700 leading-relaxed mt-2">الدليل الموحد لجهات الطوارئ بالمملكة: الدفاع المدني (998)، الهلال الأحمر (997)، الأمن العام (999)، وغرفة العمليات.</p>
+                                </div>
+                                <span class="text-xs font-bold text-emerald-700 flex items-center mt-4">عرض أرقام الطوارئ <i class="fa-solid fa-arrow-left mr-1.5"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. تقارير المشاريع والتايم شيت -->
+                <div id="project-reports-section" class="tab-content space-y-6">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex items-center space-x-4 space-x-reverse flex-1 min-w-[300px]">
+                            <label class="text-sm font-bold text-slate-700 whitespace-nowrap">اختر المشروع لتقرير الحضور والتايم شيت:</label>
+                            <select id="report-project-select" onchange="loadProjectReport()" class="w-full p-2.5 border border-slate-300 rounded-xl font-bold text-blue-900 bg-blue-50 focus:ring-2 focus:ring-blue-500"></select>
+                        </div>
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <button onclick="exportReportPDF()" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center shadow">
+                                <i class="fa-solid fa-file-pdf ml-2"></i> طباعة تقرير المشروع PDF
+                            </button>
+                            <button onclick="exportReportExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center shadow">
+                                <i class="fa-solid fa-file-excel ml-2"></i> تصدير تقرير المشروع Excel
+                            </button>
+                            <button onclick="openBankDetailsModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center shadow">
+                                <i class="fa-solid fa-building-columns ml-2"></i> المعلومات البنكية
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right border-collapse text-xs" id="project-report-table">
+                                <thead class="bg-slate-100 text-slate-700 font-bold uppercase border-b">
+                                    <tr id="report-table-head-row">
+                                        <th class="p-3 border">#</th>
+                                        <th class="p-3 border">اسم الحارس</th>
+                                        <th class="p-3 border bg-amber-50 text-amber-900">الوردية</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="project-report-body" class="divide-y divide-slate-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. الهيكل التنظيمي والصلاحيات -->
+                <div id="users-section" class="tab-content space-y-6">
+                    <div class="flex justify-between items-center flex-wrap gap-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800">الهيكل التنظيمي وتدرج الصلاحيات (Operations Hierarchy)</h3>
+                            <p class="text-xs text-slate-500">إدارة وتسكين المسؤولين وتخصيص صلاحيات أقسام النظام ومشاريع الحراسة</p>
+                        </div>
+                        <div class="flex items-center space-x-2 space-x-reverse">
+                            <button onclick="openGranularPermissionsModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center shadow">
+                                <i class="fa-solid fa-sliders ml-2"></i> مصفوفة الصلاحيات (أقسام ومشاريع)
+                            </button>
+                            <button onclick="openAddUserModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center shadow">
+                                <i class="fa-solid fa-user-plus ml-2"></i> إضافة مسؤول جديد
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-right border-collapse">
+                            <thead class="bg-slate-100 text-slate-600 text-xs font-bold uppercase border-b">
+                                <tr>
+                                    <th class="p-4">اسم المسؤول / الموظف</th>
+                                    <th class="p-4">اسم المستخدم</th>
+                                    <th class="p-4">المسمى الإداري</th>
+                                    <th class="p-4">الصلاحيات المخصصة</th>
+                                    <th class="p-4">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body" class="divide-y divide-slate-200 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- نافذة مصفوفة الصلاحيات التفصيلية -->
+    <div id="granular-permissions-modal" class="fixed inset-0 bg-slate-900/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center">
+                    <i class="fa-solid fa-sliders text-purple-600 ml-2"></i>
+                    <span>إدارة صلاحيات استخدام النظام والمشاريع لكل موظف</span>
+                </h3>
+                <button onclick="closeGranularPermissionsModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">اختر الموظف / المسؤول:</label>
+                    <select id="perm-user-select" onchange="loadUserGranularPermissions()" class="w-full p-3 border border-slate-300 rounded-xl font-bold text-sm bg-blue-50 text-blue-900 focus:ring-2 focus:ring-blue-500"></select>
+                </div>
+
+                <!-- 1. صلاحيات أقسام النظام (الشريط الجانبي) -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                    <h4 class="font-bold text-slate-800 text-xs"><i class="fa-solid fa-bars text-blue-600 ml-1"></i> صلاحيات استخدام أقسام النظام (الشريط الجانبي):</h4>
+                    <div id="tabs-permissions-container" class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs"></div>
+                </div>
+
+                <!-- 2. صلاحيات المشاريع -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                    <h4 class="font-bold text-slate-800 text-xs"><i class="fa-solid fa-building text-blue-600 ml-1"></i> صلاحيات المشاريع والإجراءات (عرض، إضافة، تعديل، حذف):</h4>
+                    <div id="projects-permissions-container" class="space-y-3 max-h-[40vh] overflow-y-auto custom-scrollbar pr-2"></div>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-3 border-t space-x-2 space-x-reverse">
+                <button onclick="closeGranularPermissionsModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs">إلغاء</button>
+                <button onclick="saveGranularPermissions()" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs shadow"><i class="fa-solid fa-check ml-1"></i> حفظ كافة الصلاحيات المخصصة</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تفاصيل المكتبة الرقمية -->
+    <div id="library-modal" class="fixed inset-0 bg-slate-900/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center" id="lib-modal-title">
+                    <i class="fa-solid fa-book-medical text-blue-600 ml-2"></i>
+                    <span>عنوان الدليل الإرشادي</span>
+                </h3>
+                <button onclick="closeLibraryModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="lib-modal-body" class="space-y-4 text-xs leading-relaxed text-slate-700"></div>
+            <div class="flex justify-end pt-3 border-t">
+                <button onclick="closeLibraryModal()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs shadow">إغلاق الدليل</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة أو تعديل مشروع -->
+    <div id="project-modal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h3 class="text-lg font-bold text-slate-800" id="project-modal-title">إضافة مشروع ميداني جديد</h3>
+            <form onsubmit="handleProjectSubmit(event)" class="space-y-3">
+                <input type="hidden" id="edit-project-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">اسم المشروع</label>
+                    <input type="text" id="new-prj-name" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">الموقع / المدينة</label>
+                    <input type="text" id="new-prj-location" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">المشرف المسؤول</label>
+                    <input type="text" id="new-prj-supervisor" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">نظام الورديات</label>
+                    <select id="new-prj-shifts" class="w-full p-2.5 border border-slate-300 rounded-xl text-sm bg-white font-bold">
+                        <option value="3 ورديات">3 ورديات</option>
+                        <option value="ورديتين">ورديتين</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">شعار المشروع الخاص (رابط أو رفع ملف)</label>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="new-prj-logo" placeholder="رابط الشعار أو ارفع ملف..." class="p-2 border border-slate-300 rounded-xl text-xs bg-white flex-1">
+                        <input type="file" id="modal-project-logo-file" accept="image/*" onchange="handleModalLogoUpload(event)" class="hidden">
+                        <button type="button" onclick="document.getElementById('modal-project-logo-file').click()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-xl text-xs font-bold shrink-0"><i class="fa-solid fa-upload ml-1"></i> رفع</button>
+                        <button type="button" onclick="clearProjectLogo()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-xl text-xs font-bold shrink-0" title="حذف الشعار وجعله فارغاً"><i class="fa-solid fa-trash ml-1"></i> حذف</button>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 space-x-reverse pt-2">
+                    <button type="button" onclick="closeProjectModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-sm">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm">حفظ المشروع</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة تسجيل بلاغ طارئ جديد -->
+    <div id="incident-modal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h3 class="text-lg font-bold text-slate-800">تسجيل بلاغ طارئ أو ملاحظة ميدانية</h3>
+            <form onsubmit="handleIncidentSubmit(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">المشروع المعني</label>
+                    <select id="inc-project-select" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm bg-white font-bold"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">نوع البلاغ / التصنيف</label>
+                    <select id="inc-type-select" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm bg-white font-bold">
+                        <option value="طارئ أمني عاجل">🔴 طارئ أمني عاجل</option>
+                        <option value="تأخر حارس عن الوردية">🟡 تأخر حارس عن الوردية</option>
+                        <option value="ملاحظة تشغيلية للعميل">🔵 ملاحظة تشغيلية للعميل</option>
+                        <option value="إداري عام">🟢 إداري عام</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">تفاصيل البلاغ</label>
+                    <textarea id="inc-desc-input" rows="3" placeholder="اكتب تفاصيل الملاحظة أو البلاغ هنا..." required class="w-full p-2.5 border border-slate-300 rounded-xl text-xs"></textarea>
+                </div>
+                <div class="flex justify-end space-x-2 space-x-reverse pt-2">
+                    <button type="button" onclick="closeIncidentModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-sm">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-sm">حفظ وإرسال البلاغ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة المعلومات البنكية الخاصة بالمشروع -->
+    <div id="bank-details-modal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center">
+                    <i class="fa-solid fa-building-columns text-amber-600 ml-2"></i>
+                    <span id="bank-modal-title">بيان المعلومات البنكية وحراس المشروع</span>
+                </h3>
+                <button onclick="closeBankDetailsModal()" class="text-slate-400 hover:text-slate-700 font-bold text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="overflow-x-auto max-h-[60vh]">
+                <table class="w-full text-right border-collapse text-xs">
+                    <thead class="bg-slate-100 text-slate-700 font-bold uppercase border-b">
+                        <tr>
+                            <th class="p-3 border">#</th>
+                            <th class="p-3 border">اسم الحارس</th>
+                            <th class="p-3 border">رقم الهوية الوطنية</th>
+                            <th class="p-3 border">رقم الآيبان (IBAN)</th>
+                            <th class="p-3 border">رقم الوردية</th>
+                            <th class="p-3 border">اسم المشروع</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bank-modal-body" class="divide-y divide-slate-200"></tbody>
+                </table>
+            </div>
+            <div class="flex justify-end pt-2 border-t space-x-2 space-x-reverse">
+                <button onclick="exportBankModalPDF()" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow"><i class="fa-solid fa-file-pdf ml-1"></i> طباعة PDF</button>
+                <button onclick="exportBankModalExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow"><i class="fa-solid fa-file-excel ml-1"></i> تصدير Excel</button>
+                <button onclick="closeBankDetailsModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة أو تعديل مسؤول -->
+    <div id="user-modal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <h3 class="text-lg font-bold text-slate-800" id="user-modal-title">إضافة مسؤول جديد وتحديد دوره</h3>
+            <form onsubmit="handleUserSubmit(event)" class="space-y-3">
+                <input type="hidden" id="edit-user-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">اسم المسؤول بالكامل</label>
+                    <input type="text" id="new-usr-fullname" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">اسم المستخدم (للدخول)</label>
+                    <input type="text" id="new-usr-username" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">كلمة المرور</label>
+                    <input type="text" id="new-usr-password" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">المسمى الإداري</label>
+                    <input type="text" id="new-usr-role" placeholder="اكتب المسمى الإداري هنا..." required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm font-bold bg-white text-blue-900">
+                </div>
+                <div class="flex justify-end space-x-2 space-x-reverse pt-2">
+                    <button type="button" onclick="closeUserModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-sm">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm">حفظ المسؤول</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة حارس جديد للمشروع -->
+    <div id="guard-modal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <h3 class="text-lg font-bold text-slate-800" id="guard-modal-title">إضافة حارس أمني جديد للمشروع</h3>
+            <form onsubmit="handleGuardSubmit(event)" class="space-y-3">
+                <input type="hidden" id="edit-guard-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">الاسم الكامل</label>
+                    <input type="text" id="guard-name" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">رقم الهوية الوطنية (10 أرقام)</label>
+                    <input type="text" id="guard-national-id" maxlength="10" placeholder="10xxxxxxxx" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">رقم الآيبان البنكي (IBAN - 24 خانة)</label>
+                    <input type="text" id="guard-iban" maxlength="24" placeholder="SA0000000000000000000000" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">رقم الجوال (10 أرقام تبدأ بـ 05)</label>
+                    <input type="text" id="guard-phone" maxlength="10" placeholder="05xxxxxxxx" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm font-mono">
+                </div>
+                <div id="guard-project-container-div">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">المشروع التابع له</label>
+                    <select id="guard-project-select" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm bg-white"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">الوردية المسجل عليها الحارس</label>
+                    <select id="guard-shift-select" required class="w-full p-2.5 border border-slate-300 rounded-xl text-sm bg-white font-bold text-amber-900">
+                        <option value="shift1">1</option>
+                        <option value="shift2">2</option>
+                        <option value="shift3">3</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-2 space-x-reverse pt-2">
+                    <button type="button" onclick="closeGuardModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-sm">إلغاء</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm">حفظ الحارس</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- السكريبت البرمجي الموحد والمصحح -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyB1w9b4X3r5MVLDHtUFsLeakbgKSLPzFhk",
+            authDomain: "amn-al-awtan-erp.firebaseapp.com",
+            databaseURL: "https://amn-al-awtan-erp-default-rtdb.firebaseio.com",
+            projectId: "amn-al-awtan-erp",
+            storageBucket: "amn-al-awtan-erp.appspot.com",
+            messagingSenderId: "340387073084",
+            appId: "1:340387073084:web:a6f1b1c16f30a160bf4739"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const dbRef = firebase.database().ref('owtan_erp_data');
+        console.log("Firebase Connected Successfully!");
+
+        const DEFAULT_STATE = {
+            users: [
+                { id: "usr-admin", fullname: "مدير النظام", username: "admin", password: "admin123", role: "admin", tabPermissions: {}, projectPermissions: {} },
+                { id: "usr-ceo", fullname: "المدير التنفيذي", username: "ceo", password: "ceo123", role: "المدير التنفيذي", tabPermissions: {}, projectPermissions: {} },
+                { id: "usr-opm", fullname: "مدير العمليات", username: "op_manager", password: "op123", role: "مدير العمليات", tabPermissions: {}, projectPermissions: {} },
+                { id: "usr-dir", fullname: "مدير مشاريع عام", username: "director", password: "dir123", role: "مدير مشاريع عام", tabPermissions: {}, projectPermissions: {} },
+                { id: "usr-pm", fullname: "مدير مشروع", username: "pm", password: "pm123", role: "مدير مشروع", tabPermissions: {}, projectPermissions: {} }
+            ],
+            projects: [
+                { id: "prj-1", name: "مشروع الرياض المالي", location: "الرياض", supervisor: "مشرف المشروع", shifts: "3 ورديات", logo: "ah.png" },
+                { id: "prj-2", name: "مشروع أبها التجاري", location: "أبها", supervisor: "مشرف المشروع", shifts: "ورديتين", logo: "ah.png" },
+                { id: "prj-3", name: "مشروع نجران الإداري", location: "نجران", supervisor: "مشرف المشروع", shifts: "3 ورديات", logo: "ah.png" },
+                { id: "prj-4", name: "مشروع القطيف السكني", location: "القطيف", supervisor: "مشرف المشروع", shifts: "ورديتين", logo: "ah.png" },
+                { id: "prj-5", name: "مشروع حفر الباطن الحيوي", location: "حفر الباطن", supervisor: "مشرف المشروع", shifts: "3 ورديات", logo: "ah.png" },
+                { id: "prj-6", name: "مشروع البدائع اللوجستي", location: "البدائع", supervisor: "مشرف المشروع", shifts: "ورديتين", logo: "ah.png" },
+                { id: "prj-7", name: "مشروع 2", location: "الرياض", supervisor: "مشرف المشروع", shifts: "3 ورديات", logo: "ah.png" }
+            ],
+            guards: [
+                { id: "g1", name: "فهد بن خالد العتيبي", nationalId: "1098234511", iban: "SA0380000000608011223344", phone: "0551122334", projectId: "prj-1", defaultShift: "shift1", status: "نشط" },
+                { id: "g2", name: "سلطان محمد القحطاني", nationalId: "1076543299", iban: "SA1580000000608022334455", phone: "0552233445", projectId: "prj-1", defaultShift: "shift2", status: "نشط" },
+                { id: "g3", name: "صالح عبدالله العمري", nationalId: "1054321088", iban: "SA2880000000608033445566", phone: "0553344556", projectId: "prj-2", defaultShift: "shift1", status: "نشط" },
+                { id: "g4", name: "ناصر سعيد اليامي", nationalId: "1032109877", iban: "SA4180000000608044556677", phone: "0554455667", projectId: "prj-3", defaultShift: "shift3", status: "نشط" },
+                { id: "g5", name: "علي حسن آل إبراهيم", nationalId: "1010987666", iban: "SA5480000000608055667788", phone: "0555566778", projectId: "prj-4", defaultShift: "shift2", status: "نشط" },
+                { id: "g6", name: "مشعل خلف الشمري", nationalId: "1087654355", iban: "SA6780000000608066778899", phone: "0556677889", projectId: "prj-5", defaultShift: "shift1", status: "نشط" },
+                { id: "g7", name: "بدر عواض الحربي", nationalId: "1065432144", iban: "SA8080000000608077889900", phone: "0557788990", projectId: "prj-6", defaultShift: "shift3", status: "نشط" }
+            ],
+            attendance: {},
+            incidents: [],
+            settings: { companyLogo: "watermarked_img_8448020907437168992.jpg" }
+        };
+
+        let appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+        let currentUser = null;
+        let selectedFilterShift = 'all';
+
+        const ALL_SECTIONS = [
+            { id: 'dashboard-section', name: 'لوحة العمليات' },
+            { id: 'projects-section', name: 'إدارة المشاريع وشعاراتها' },
+            { id: 'attendance-section', name: 'التحضير الميداني والورديات' },
+            { id: 'guards-section', name: 'سجل الحراس' },
+            { id: 'incidents-section', name: 'سجل البلاغات والطوارئ' },
+            { id: 'radar-section', name: 'رادار التمركز الميداني' },
+            { id: 'library-section', name: 'المكتبة الرقمية والإسعافات' },
+            { id: 'project-reports-section', name: 'تقارير المشاريع والتايم شيت' },
+            { id: 'users-section', name: 'الهيكل التنظيمي والصلاحيات' }
+        ];
+
+        function initApp() {
+            dbRef.on('value', (snapshot) => {
+                const cloudData = snapshot.val();
+                if (cloudData) {
+                    appState.projects = cloudData.projects || DEFAULT_STATE.projects;
+                    appState.guards = cloudData.guards || DEFAULT_STATE.guards;
+                    appState.users = cloudData.users || DEFAULT_STATE.users;
+                    appState.attendance = cloudData.attendance || {};
+                    appState.incidents = cloudData.incidents || [];
+                    appState.settings = cloudData.settings || DEFAULT_STATE.settings;
+                } else {
+                    saveData();
+                }
+                refreshUI();
+            });
+        }
+
+        function saveData() {
+            dbRef.set(appState);
+            localStorage.setItem('OWTAN_ERP_EDITABLE_V65', JSON.stringify(appState));
+        }
+
+        // دالة التحقق الحصرية مرتبطة بحساب admin بشكل قاطع
+        function isSystemAdmin() {
+            return currentUser && currentUser.username && currentUser.username.toLowerCase() === 'admin';
+        }
+
+        function hasTabPermission(tabId) {
+            if (!currentUser) return false;
+            if (isSystemAdmin()) return true;
+            if (!currentUser.tabPermissions) return false;
+            return currentUser.tabPermissions[tabId] === true;
+        }
+
+        function hasProjectPermission(prjId, actionType) {
+            if (!currentUser) return false;
+            if (isSystemAdmin()) return true;
+            if (!currentUser.projectPermissions || !currentUser.projectPermissions[prjId]) return false;
+            return !!currentUser.projectPermissions[prjId][actionType];
+        }
+
+        function refreshUI() {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const dateInput = document.getElementById('attendance-date-input');
+            if (dateInput && !dateInput.value) dateInput.value = todayStr;
+
+            applySidebarPermissions();
+            populateProjectDropdowns();
+            renderDashboard();
+            renderProjectsTable();
+            renderGuardsTable();
+            renderUsersTable();
+            renderIncidentsTable();
+            populateRadarDropdowns();
+            renderInteractiveRadar();
+            loadProjectReport();
+            
+            // إصلاح إضافي: فرض إظهار لوحة الشعار برمجياً على مستوى العنصر المباشر
+            const securityPanel = document.getElementById('security-admin-settings-panel');
+            if (securityPanel) {
+                if (isSystemAdmin()) {
+                    securityPanel.style.display = 'block';
+                    securityPanel.style.visibility = 'visible';
+                    securityPanel.style.opacity = '1';
+                } else {
+                    securityPanel.style.display = 'none';
+                }
+            }
+
+            if(appState.settings && document.getElementById('company-logo-input')) {
+                document.getElementById('company-logo-input').value = appState.settings.companyLogo || '';
+            }
+
+            const dateEl = document.getElementById('current-date');
+            if(dateEl) {
+                dateEl.innerText = new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            }
+        }
+
+        function applySidebarPermissions() {
+            ALL_SECTIONS.forEach(sec => {
+                const btn = document.getElementById(`nav-${sec.id}`);
+                if (btn) {
+                    if (isSystemAdmin() || hasTabPermission(sec.id)) {
+                        btn.style.display = 'flex';
+                    } else {
+                        btn.style.display = 'none';
+                    }
+                }
+            });
+            const usersTab = document.getElementById('nav-users-section');
+            if (usersTab) {
+                if (isSystemAdmin()) {
+                    usersTab.classList.remove('hidden');
+                    usersTab.classList.add('flex');
+                } else {
+                    usersTab.classList.remove('flex');
+                    usersTab.classList.add('hidden');
+                }
+            }
+        }
+
+        function handleGlobalLogoUpload(e) {
+            if (!isSystemAdmin()) return;
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(uploadEvent) {
+                document.getElementById('company-logo-input').value = uploadEvent.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleModalLogoUpload(e) {
+            if (!isSystemAdmin()) return;
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(uploadEvent) {
+                document.getElementById('new-prj-logo').value = uploadEvent.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearProjectLogo() {
+            if (!isSystemAdmin()) return;
+            document.getElementById('new-prj-logo').value = '';
+        }
+
+        function saveCompanyLogo() {
+            if (!isSystemAdmin()) {
+                alert('عذراً، هذه الصلاحية مخصصة لـ admin فقط[cite: 3].');
+                return;
+            }
+            const companyLogo = document.getElementById('company-logo-input').value.trim();
+            if(!appState.settings) appState.settings = {};
+            appState.settings.companyLogo = companyLogo;
+            saveData();
+            alert('تم حفظ شعار الشركة العام سحابياً بنجاح[cite: 3]!');
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('login-username').value.trim();
+            const p = document.getElementById('login-password').value.trim();
+            
+            if (u.toLowerCase() === 'admin' && p === 'admin123') {
+                currentUser = {
+                    id: "usr-admin",
+                    fullname: "مدير النظام",
+                    username: "admin",
+                    role: "admin",
+                    tabPermissions: {},
+                    projectPermissions: {}
+                };
+            } else {
+                let foundUser = appState.users.find(usr => usr.username.toLowerCase() === u.toLowerCase() && usr.password === p);
+                if (foundUser) {
+                    currentUser = foundUser;
+                }
+            }
+
+            if (currentUser) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-container').classList.remove('hidden');
+                document.getElementById('current-user-name').innerText = currentUser.username;
+                applyUserPermissions();
+            } else {
+                alert('اسم المستخدم أو كلمة المرور غير صحيحة.');
+            }
+        }
+
+        function getAccessibleProjects() {
+            if (!currentUser) return [];
+            if (isSystemAdmin()) {
+                return appState.projects;
+            } else {
+                return appState.projects.filter(p => hasProjectPermission(p.id, 'view'));
+            }
+        }
+
+        function applyUserPermissions() {
+            applySidebarPermissions();
+            populateProjectDropdowns();
+            const firstAvailable = ALL_SECTIONS.find(sec => isSystemAdmin() || hasTabPermission(sec.id));
+            if (firstAvailable) {
+                switchTab(firstAvailable.id);
+            } else {
+                alert('عذراً، ليس لديك أي صلاحيات لعرض أقسام النظام. يرجى مراجعة admin[cite: 3].');
+                logout();
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('login-screen').style.display = 'flex';
+        }
+
+        function switchTab(tabId) {
+            if (!isSystemAdmin() && !hasTabPermission(tabId)) {
+                alert('عذراً، ليس لديك صلاحية الوصول إلى هذا القسم.');
+                return;
+            }
+
+            document.querySelectorAll('.tab-content').forEach(s => {
+                s.classList.remove('active');
+                s.style.display = 'none';
+            });
+            const t = document.getElementById(tabId);
+            if (t) {
+                t.classList.add('active');
+                t.style.display = 'block';
+            }
+            document.querySelectorAll('.sidebar-item').forEach(btn => btn.classList.remove('bg-blue-600', 'text-white'));
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) activeNav.classList.add('bg-blue-600', 'text-white');
+            
+            if (tabId === 'dashboard-section') renderDashboard();
+            else if (tabId === 'projects-section') { renderProjectsTable(); }
+            else if (tabId === 'project-reports-section') loadProjectReport();
+            else if (tabId === 'attendance-section') onAttendanceProjectChange();
+            else if (tabId === 'guards-section') renderGuardsTable();
+            else if (tabId === 'incidents-section') renderIncidentsTable();
+            else if (tabId === 'radar-section') { populateRadarDropdowns(); renderInteractiveRadar(); }
+            else if (tabId === 'users-section') renderUsersTable();
+        }
+
+        function populateProjectDropdowns() {
+            const selectIds = ['attendance-project-select', 'guard-project-select', 'report-project-select', 'dash-project-selector', 'inc-project-select'];
+            const accessibleProjects = getAccessibleProjects();
+
+            selectIds.forEach(selectId => {
+                const el = document.getElementById(selectId);
+                if (el) {
+                    const currentVal = el.value;
+                    el.innerHTML = '<option value="">-- اختر المشروع --</option>';
+                    accessibleProjects.forEach(p => {
+                        el.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+                    });
+                    if (currentVal && accessibleProjects.some(p => p.id === currentVal)) {
+                        el.value = currentVal;
+                    } else if (accessibleProjects.length > 0) {
+                        el.value = accessibleProjects[0].id;
+                    }
+                }
+            });
+            onDashProjectChange();
+        }
+
+        function populateRadarDropdowns() {
+            const radarSelect = document.getElementById('radar-project-selector');
+            if(!radarSelect) return;
+            const currentVal = radarSelect.value;
+            const accessibleProjects = getAccessibleProjects();
+            radarSelect.innerHTML = '';
+            accessibleProjects.forEach(p => {
+                radarSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+            });
+            if (currentVal && accessibleProjects.some(p => p.id === currentVal)) {
+                radarSelect.value = currentVal;
+            } else if (accessibleProjects.length > 0) {
+                radarSelect.value = accessibleProjects[0].id;
+            }
+        }
+
+        function renderDashboard() {
+            const accessibleProjects = getAccessibleProjects();
+            if (!accessibleProjects) return;
+
+            document.getElementById('dash-projects-count').innerText = accessibleProjects.length;
+            
+            const accessiblePrjIds = accessibleProjects.map(p => p.id);
+            const accessibleGuards = appState.guards.filter(g => accessiblePrjIds.includes(g.projectId));
+            document.getElementById('dash-guards-count').innerText = accessibleGuards.length;
+            
+            let absent = 0, leave = 0;
+            const dateVal = document.getElementById('attendance-date-input')?.value || new Date().toISOString().slice(0, 10);
+            
+            let unapprovedProjectsCount = 0;
+
+            if (appState.attendance) {
+                accessiblePrjIds.forEach(prjId => {
+                    const prjDates = appState.attendance[prjId];
+                    if (prjDates) {
+                        let targetDateData = prjDates[dateVal];
+                        if (!targetDateData) {
+                            const allDates = Object.keys(prjDates);
+                            if (allDates.length > 0) {
+                                targetDateData = prjDates[allDates[allDates.length - 1]];
+                            }
+                        }
+                        if (targetDateData) {
+                            let hasSaved = false;
+                            Object.values(targetDateData).forEach(item => {
+                                if (item && item.saved) {
+                                    hasSaved = true;
+                                    if (item.status === 'absent') absent++;
+                                    else if (item.status === 'leave') leave++;
+                                }
+                            });
+                            if (!hasSaved) unapprovedProjectsCount++;
+                        } else {
+                            unapprovedProjectsCount++;
+                        }
+                    } else {
+                        unapprovedProjectsCount++;
+                    }
+                });
+            }
+
+            document.getElementById('dash-absent-count').innerText = absent;
+            document.getElementById('dash-leave-count').innerText = leave;
+
+            const alertTextEl = document.getElementById('tactical-alert-text');
+            if (alertTextEl) {
+                if (absent > 0 || unapprovedProjectsCount > 0) {
+                    alertTextEl.innerHTML = `🔴 <strong>تنبيه عملياتي:</strong> يوجد ${absent} حالة غياب مسجلة اليوم، و ${unapprovedProjectsCount} مشاريع لم يُعتمد تحضيرها بعد.`;
+                } else {
+                    alertTextEl.innerHTML = `🟢 <strong>الحالة الأمنية مستقرة:</strong> كافة المشاريع تعمل بكامل قوتها البشرية وتم اعتماد التحضير بنجاح.`;
+                }
+            }
+        }
+
+        function getGuardsForProject(prjId) {
+            if (!prjId) return [];
+            let guards = appState.guards.filter(g => g.projectId === prjId);
+            guards.sort((a, b) => (a.defaultShift || 'shift1').localeCompare(b.defaultShift || 'shift1'));
+            return guards;
+        }
+
+        function onDashProjectChange() {
+            const selector = document.getElementById('dash-project-selector');
+            if (!selector) return;
+            const prjId = selector.value;
+            const tbody = document.getElementById('dash-project-guards-body');
+            if (!prjId) return;
+            const prj = appState.projects.find(p => p.id === prjId);
+            if (!prj) return;
+
+            document.getElementById('dp-name').innerText = prj.name;
+            document.getElementById('dp-location').innerText = prj.location;
+            document.getElementById('dp-supervisor').innerText = prj.supervisor;
+            document.getElementById('dp-shifts').innerText = prj.shifts || '3 ورديات';
+
+            const prjGuards = getGuardsForProject(prj.id);
+            document.getElementById('dp-guards-count').innerText = prjGuards.length + ' حارس';
+
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (prjGuards.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">لا توجد حراس مسجلين.</td></tr>';
+                return;
+            }
+            prjGuards.slice(0, 5).forEach((g, idx) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="p-3 font-bold text-slate-400">${idx + 1}</td>
+                        <td class="p-3 font-bold text-slate-800">${g.name}</td>
+                        <td class="p-3">${g.nationalId}</td>
+                        <td class="p-3 font-mono text-slate-700">${g.phone || '-'}</td>
+                        <td class="p-3"><span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-semibold">${g.status}</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function jumpToAttendanceForSelected() {
+            const prjId = document.getElementById('dash-project-selector').value;
+            if (!prjId) return;
+            switchTab('attendance-section');
+            const attSelect = document.getElementById('attendance-project-select');
+            if (attSelect) {
+                attSelect.value = prjId;
+                onAttendanceProjectChange();
+            }
+        }
+
+        function renderProjectsTable() {
+            const tbody = document.getElementById('projects-table-body');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            const listToDisplay = getAccessibleProjects();
+            
+            listToDisplay.forEach(p => {
+                const count = getGuardsForProject(p.id).length;
+                let canEdit = isSystemAdmin() || hasProjectPermission(p.id, 'edit');
+                let canDelete = isSystemAdmin() || hasProjectPermission(p.id, 'delete');
+                
+                let actionsHtml = `<div class="flex items-center space-x-2 space-x-reverse">`;
+                if(canEdit) {
+                    actionsHtml += `<button onclick="editProject('${p.id}')" class="text-blue-600 font-bold text-xs"><i class="fa-solid fa-pen"></i> تعديل</button>`;
+                }
+                if(canDelete) {
+                    actionsHtml += `<button onclick="deleteProject('${p.id}')" class="text-rose-600 font-bold text-xs"><i class="fa-solid fa-trash"></i> حذف</button>`;
+                }
+                if(!canEdit && !canDelete) {
+                    actionsHtml += `<span class="text-slate-400 text-xs">عرض فقط</span>`;
+                }
+                actionsHtml += `</div>`;
+                
+                const logoThumb = p.logo ? `<img src="${p.logo}" class="w-8 h-8 rounded-full object-cover border" onerror="this.src='ah.png'">` : '<span class="text-xs text-slate-400">افتراضي</span>';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4 font-bold text-slate-800">${p.name}</td>
+                        <td class="p-4">${p.location}</td>
+                        <td class="p-4 font-semibold text-blue-700">${p.supervisor}</td>
+                        <td class="p-4"><span class="bg-purple-50 text-purple-700 px-2.5 py-1 rounded text-xs font-bold">${p.shifts || '3 ورديات'}</span></td>
+                        <td class="p-4">${logoThumb}</td>
+                        <td class="p-4"><span class="bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full text-xs">${count} حارس</span></td>
+                        <td class="p-4">${actionsHtml}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openAddProjectModal() {
+            if (!isSystemAdmin()) {
+                alert('عذراً، إضافة مشاريع جديدة مخصصة لـ admin فقط[cite: 3].');
+                return;
+            }
+            document.getElementById('project-modal-title').innerText = 'إضافة مشروع ميداني جديد';
+            document.getElementById('edit-project-id').value = '';
+            document.getElementById('new-prj-name').value = '';
+            document.getElementById('new-prj-location').value = '';
+            document.getElementById('new-prj-supervisor').value = '';
+            document.getElementById('new-prj-shifts').value = '3 ورديات';
+            document.getElementById('new-prj-logo').value = '';
+            document.getElementById('project-modal').classList.remove('hidden');
+        }
+
+        function editProject(id) {
+            const prj = appState.projects.find(p => p.id === id);
+            if(!prj) return;
+            document.getElementById('project-modal-title').innerText = 'تعديل بيانات المشروع والشعار';
+            document.getElementById('edit-project-id').value = prj.id;
+            document.getElementById('new-prj-name').value = prj.name;
+            document.getElementById('new-prj-location').value = prj.location;
+            document.getElementById('new-prj-supervisor').value = prj.supervisor;
+            document.getElementById('new-prj-shifts').value = prj.shifts || '3 ورديات';
+            document.getElementById('new-prj-logo').value = prj.logo || '';
+            document.getElementById('project-modal').classList.remove('hidden');
+        }
+
+        function closeProjectModal() {
+            document.getElementById('project-modal').classList.add('hidden');
+        }
+
+        function handleProjectSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-project-id').value;
+            const name = document.getElementById('new-prj-name').value.trim();
+            const location = document.getElementById('new-prj-location').value.trim();
+            const supervisor = document.getElementById('new-prj-supervisor').value.trim();
+            const shifts = document.getElementById('new-prj-shifts').value;
+            const logo = document.getElementById('new-prj-logo').value.trim();
+
+            if (id) {
+                const prj = appState.projects.find(p => p.id === id);
+                if (prj) {
+                    prj.name = name;
+                    prj.location = location;
+                    prj.supervisor = supervisor;
+                    prj.shifts = shifts;
+                    prj.logo = logo;
+                }
+            } else {
+                appState.projects.push({
+                    id: `prj-${Date.now()}`,
+                    name,
+                    location,
+                    supervisor,
+                    shifts,
+                    logo
+                });
+            }
+            saveData();
+            renderProjectsTable();
+            populateProjectDropdowns();
+            closeProjectModal();
+        }
+
+        function deleteProject(id) {
+            if (confirm('هل أنت متأكد من حذف هذا المشروع؟')) {
+                appState.projects = appState.projects.filter(p => p.id !== id);
+                saveData();
+                renderProjectsTable();
+                populateProjectDropdowns();
+            }
+        }
+
+        // دوال مصفوفة الصلاحيات الشاملة
+        function openGranularPermissionsModal() {
+            if (!isSystemAdmin()) {
+                alert('عذراً، هذه الصلاحية لـ admin فقط[cite: 3].');
+                return;
+            }
+            const userSelect = document.getElementById('perm-user-select');
+            userSelect.innerHTML = '';
+            appState.users.forEach(u => {
+                if (u.username.toLowerCase() !== 'admin') {
+                    userSelect.innerHTML += `<option value="${u.id}">${u.fullname} (${u.role})</option>`;
+                }
+            });
+            loadUserGranularPermissions();
+            document.getElementById('granular-permissions-modal').classList.remove('hidden');
+        }
+
+        function closeGranularPermissionsModal() {
+            document.getElementById('granular-permissions-modal').classList.add('hidden');
+        }
+
+        function loadUserGranularPermissions() {
+            const userId = document.getElementById('perm-user-select').value;
+            const tabsContainer = document.getElementById('tabs-permissions-container');
+            const projectsContainer = document.getElementById('projects-permissions-container');
+            
+            tabsContainer.innerHTML = '';
+            projectsContainer.innerHTML = '';
+
+            const user = appState.users.find(u => u.id === userId);
+            if (!user) return;
+
+            if (!user.tabPermissions) user.tabPermissions = {};
+            if (!user.projectPermissions) user.projectPermissions = {};
+
+            ALL_SECTIONS.forEach(sec => {
+                const isAllowed = user.tabPermissions[sec.id] === true;
+                tabsContainer.innerHTML += `
+                    <label class="flex items-center space-x-2 space-x-reverse cursor-pointer bg-white p-2.5 rounded-xl border border-slate-200">
+                        <input type="checkbox" data-uid="${userId}" data-tabid="${sec.id}" ${isAllowed ? 'checked' : ''} class="w-4 h-4 text-blue-600 rounded tab-cb">
+                        <span class="font-bold text-slate-700">${sec.name}</span>
+                    </label>
+                `;
+            });
+
+            appState.projects.forEach(p => {
+                const pPerms = user.projectPermissions[p.id] || { view: false, add: false, edit: false, delete: false };
+                projectsContainer.innerHTML += `
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                        <span class="font-bold text-slate-800 text-xs w-1/4">${p.name}</span>
+                        <div class="flex items-center space-x-4 space-x-reverse text-xs">
+                            <label class="flex items-center space-x-1 space-x-reverse cursor-pointer"><input type="checkbox" data-uid="${userId}" data-pid="${p.id}" data-action="view" ${pPerms.view ? 'checked' : ''} class="w-4 h-4 text-blue-600 rounded"> <span>عرض فقط</span></label>
+                            <label class="flex items-center space-x-1 space-x-reverse cursor-pointer"><input type="checkbox" data-uid="${userId}" data-pid="${p.id}" data-action="add" ${pPerms.add ? 'checked' : ''} class="w-4 h-4 text-emerald-600 rounded"> <span>إضافة</span></label>
+                            <label class="flex items-center space-x-1 space-x-reverse cursor-pointer"><input type="checkbox" data-uid="${userId}" data-pid="${p.id}" data-action="edit" ${pPerms.edit ? 'checked' : ''} class="w-4 h-4 text-amber-600 rounded"> <span>تعديل</span></label>
+                            <label class="flex items-center space-x-1 space-x-reverse cursor-pointer"><input type="checkbox" data-uid="${userId}" data-pid="${p.id}" data-action="delete" ${pPerms.delete ? 'checked' : ''} class="w-4 h-4 text-rose-600 rounded"> <span>حذف</span></label>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function saveGranularPermissions() {
+            const userId = document.getElementById('perm-user-select').value;
+            const user = appState.users.find(u => u.id === userId);
+            if (!user) return;
+
+            if (!user.tabPermissions) user.tabPermissions = {};
+            if (!user.projectPermissions) user.projectPermissions = {};
+
+            const tabCheckboxes = document.querySelectorAll('.tab-cb');
+            tabCheckboxes.forEach(cb => {
+                const tabid = cb.getAttribute('data-tabid');
+                user.tabPermissions[tabid] = cb.checked;
+            });
+
+            const projectCheckboxes = document.querySelectorAll('#projects-permissions-container input[type="checkbox"]');
+            projectCheckboxes.forEach(cb => {
+                const pid = cb.getAttribute('data-pid');
+                const action = cb.getAttribute('data-action');
+                if (!user.projectPermissions[pid]) {
+                    user.projectPermissions[pid] = { view: false, add: false, edit: false, delete: false };
+                }
+                user.projectPermissions[pid][action] = cb.checked;
+            });
+
+            saveData();
+            closeGranularPermissionsModal();
+            alert('تم حفظ صلاحيات النظام والمشاريع للمستخدم بنجاح!');
+            refreshUI();
+        }
+
+        function openAddUserModal() {
+            if (!isSystemAdmin()) {
+                alert('عذراً، هذه الصلاحية لـ admin فقط[cite: 3].');
+                return;
+            }
+            document.getElementById('user-modal-title').innerText = 'إضافة مسؤول جديد وتحديد دوره';
+            document.getElementById('edit-user-id').value = '';
+            document.getElementById('new-usr-fullname').value = '';
+            document.getElementById('new-usr-username').value = '';
+            document.getElementById('new-usr-password').value = '';
+            document.getElementById('new-usr-role').value = '';
+            document.getElementById('user-modal').classList.remove('hidden');
+        }
+
+        function editUser(id) {
+            const usr = appState.users.find(u => u.id === id);
+            if(!usr) return;
+            document.getElementById('user-modal-title').innerText = 'تعديل بيانات المسؤول';
+            document.getElementById('edit-user-id').value = usr.id;
+            document.getElementById('new-usr-fullname').value = usr.fullname;
+            document.getElementById('new-usr-username').value = usr.username;
+            document.getElementById('new-usr-password').value = usr.password || '';
+            document.getElementById('new-usr-role').value = usr.role || '';
+            document.getElementById('user-modal').classList.remove('hidden');
+        }
+
+        function closeUserModal() {
+            document.getElementById('user-modal').classList.add('hidden');
+        }
+
+        function handleUserSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-user-id').value;
+            const fullname = document.getElementById('new-usr-fullname').value.trim();
+            const username = document.getElementById('new-usr-username').value.trim();
+            const password = document.getElementById('new-usr-password').value.trim();
+            const role = document.getElementById('new-usr-role').value.trim();
+
+            if (id) {
+                const usr = appState.users.find(u => u.id === id);
+                if (usr) {
+                    usr.fullname = fullname;
+                    usr.username = username;
+                    usr.password = password;
+                    usr.role = role;
+                }
+            } else {
+                appState.users.push({
+                    id: `usr-${Date.now()}`,
+                    fullname,
+                    username,
+                    password,
+                    role,
+                    tabPermissions: {},
+                    projectPermissions: {}
+                });
+            }
+
+            saveData();
+            renderUsersTable();
+            closeUserModal();
+        }
+
+        function deleteUser(id) {
+            const usr = appState.users.find(u => u.id === id);
+            if (!usr) return;
+            if (usr.username.toLowerCase() === 'admin') {
+                alert('عذراً، لا يمكن حذف حساب admin الأساسي[cite: 3].');
+                return;
+            }
+            if (confirm(`هل أنت متأكد من حذف المسؤول "${usr.fullname}"؟`)) {
+                appState.users = appState.users.filter(u => u.id !== id);
+                saveData();
+                renderUsersTable();
+            }
+        }
+
+        function renderGuardsTable() {
+            const tbody = document.getElementById('guards-table-body');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            const accessibleProjects = getAccessibleProjects();
+            const accessiblePrjIds = accessibleProjects.map(p => p.id);
+            let list = appState.guards.filter(g => accessiblePrjIds.includes(g.projectId));
+            list.sort((a, b) => (a.defaultShift || 'shift1').localeCompare(b.defaultShift || 'shift1'));
+
+            const searchInput = document.getElementById('guard-search-input');
+            const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+            if (query) {
+                list = list.filter(g => 
+                    g.name.toLowerCase().includes(query) || 
+                    g.nationalId.toLowerCase().includes(query) || 
+                    (g.phone && g.phone.toLowerCase().includes(query))
+                );
+            }
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400">لا توجد نتائج مطابقة للبحث.</td></tr>';
+                return;
+            }
+            list.forEach(g => {
+                const prj = appState.projects.find(p => p.id === g.projectId);
+                const shiftNum = (g.defaultShift || 'shift1').replace('shift', '');
+                const sLabel = `${shiftNum}`;
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4 font-bold text-slate-800">${g.name}</td>
+                        <td class="p-4 font-mono">${g.nationalId}</td>
+                        <td class="p-4 font-mono text-slate-700">${g.phone || '-'}</td>
+                        <td class="p-4"><span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold">${prj ? prj.name : 'غير مسكن'}</span></td>
+                        <td class="p-4"><span class="bg-amber-50 text-amber-900 font-bold px-2.5 py-1 rounded text-xs">${sLabel}</span></td>
+                        <td class="p-4 space-x-2 space-x-reverse">
+                            <button onclick="editGuard('${g.id}')" class="text-blue-600 font-bold text-xs"><i class="fa-solid fa-pen"></i> تعديل</button>
+                            <button onclick="deleteGuard('${g.id}')" class="text-rose-600 font-bold text-xs"><i class="fa-solid fa-trash"></i> حذف</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function filterGuardsTable() {
+            renderGuardsTable();
+        }
+
+        function openAddGuardModal() {
+            populateProjectDropdowns();
+            document.getElementById('guard-modal-title').innerText = 'إضافة حارس أمني جديد للمشروع';
+            document.getElementById('edit-guard-id').value = '';
+            document.getElementById('guard-name').value = '';
+            document.getElementById('guard-national-id').value = '';
+            document.getElementById('guard-iban').value = '';
+            document.getElementById('guard-phone').value = '';
+            document.getElementById('guard-shift-select').value = 'shift1';
+            
+            const prjSelect = document.getElementById('guard-project-select');
+            const accessiblePrjs = getAccessibleProjects();
+            prjSelect.innerHTML = '';
+            accessiblePrjs.forEach(p => {
+                prjSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+            });
+            if(accessiblePrjs.length > 0) prjSelect.value = accessiblePrjs[0].id;
+
+            document.getElementById('guard-modal').classList.remove('hidden');
+        }
+
+        function closeGuardModal() {
+            document.getElementById('guard-modal').classList.add('hidden');
+        }
+
+        function handleGuardSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-guard-id').value;
+            const name = document.getElementById('guard-name').value;
+            const nationalId = document.getElementById('guard-national-id').value.trim();
+            const iban = document.getElementById('guard-iban').value.trim();
+            const phone = document.getElementById('guard-phone').value.trim();
+            const defaultShift = document.getElementById('guard-shift-select').value;
+            const projectId = document.getElementById('guard-project-select').value;
+
+            if (iban.length !== 24) {
+                alert('رقم الآيبان (IBAN) يجب أن يكون مكوناً من 24 خانة بالضبط.');
+                return;
+            }
+
+            if (id) {
+                const grd = appState.guards.find(g => g.id === id);
+                if (grd) {
+                    grd.name = name;
+                    grd.nationalId = nationalId;
+                    grd.iban = iban;
+                    grd.phone = phone;
+                    grd.defaultShift = defaultShift;
+                    grd.projectId = projectId;
+                }
+            } else {
+                appState.guards.push({
+                    id: `grd-${Date.now()}`,
+                    name,
+                    nationalId,
+                    iban,
+                    phone,
+                    projectId,
+                    defaultShift,
+                    status: "نشط"
+                });
+            }
+            saveData();
+            renderGuardsTable();
+            renderDashboard();
+            closeGuardModal();
+        }
+
+        function editGuard(id) {
+            populateProjectDropdowns();
+            const grd = appState.guards.find(g => g.id === id);
+            if (!grd) return;
+
+            document.getElementById('guard-modal-title').innerText = 'تعديل بيانات الحارس';
+            document.getElementById('edit-guard-id').value = grd.id;
+            document.getElementById('guard-name').value = grd.name;
+            document.getElementById('guard-national-id').value = grd.nationalId;
+            document.getElementById('guard-iban').value = grd.iban || '';
+            document.getElementById('guard-phone').value = grd.phone;
+            document.getElementById('guard-shift-select').value = grd.defaultShift || 'shift1';
+            
+            const prjSelect = document.getElementById('guard-project-select');
+            prjSelect.value = grd.projectId;
+
+            document.getElementById('guard-modal').classList.remove('hidden');
+        }
+
+        function deleteGuard(id) {
+            if (confirm('هل أنت متأكد من حذف هذا الحارس؟')) {
+                appState.guards = appState.guards.filter(g => g.id !== id);
+                saveData();
+                renderGuardsTable();
+                renderDashboard();
+            }
+        }
+
+        function renderUsersTable() {
+            const tbody = document.getElementById('users-table-body');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+
+            appState.users.forEach(u => {
+                let roleName = u.role || 'admin';
+                let editBtn = isSystemAdmin() ? `
+                    <button onclick="editUser('${u.id}')" class="text-blue-600 font-bold text-xs ml-2"><i class="fa-solid fa-pen"></i> تعديل</button>
+                    ${u.username.toLowerCase() !== 'admin' ? `<button onclick="deleteUser('${u.id}')" class="text-rose-600 font-bold text-xs"><i class="fa-solid fa-trash"></i> حذف</button>` : ''}
+                ` : '-';
+                
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4 font-bold text-slate-800">${u.fullname}</td>
+                        <td class="p-4 font-mono text-blue-600">${u.username}</td>
+                        <td class="p-4"><span class="bg-purple-100 text-purple-800 px-2.5 py-1 rounded text-xs font-bold">${roleName}</span></td>
+                        <td class="p-4 text-xs font-semibold text-slate-700">مخصص عبر مصفوفة الصلاحيات (أقسام ومشاريع)</td>
+                        <td class="p-4">${editBtn}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderIncidentsTable() {
+            const tbody = document.getElementById('incidents-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            const list = appState.incidents || [];
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400">لا توجد بلاغات طارئة مسجلة حتى الآن.</td></tr>';
+                return;
+            }
+            list.slice().reverse().forEach((inc, idx) => {
+                const prj = appState.projects.find(p => p.id === inc.projectId);
+                let badgeClass = "bg-rose-100 text-rose-800";
+                if(inc.type.includes('تأخر')) badgeClass = "bg-amber-100 text-amber-800";
+                else if(inc.type.includes('ملاحظة')) badgeClass = "bg-blue-100 text-blue-800";
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4 font-mono text-xs text-slate-500">${inc.time}</td>
+                        <td class="p-4 font-bold text-slate-800">${prj ? prj.name : 'مشروع عام'}</td>
+                        <td class="p-4"><span class="${badgeClass} px-2.5 py-1 rounded text-xs font-bold">${inc.type}</span></td>
+                        <td class="p-4 text-xs text-slate-700">${inc.description}</td>
+                        <td class="p-4 font-semibold text-blue-700">${inc.reporter}</td>
+                        <td class="p-4">
+                            <button onclick="deleteIncident('${inc.id}')" class="text-rose-600 font-bold text-xs"><i class="fa-solid fa-trash"></i> إغلاق</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openIncidentModal() {
+            populateProjectDropdowns();
+            document.getElementById('inc-desc-input').value = '';
+            document.getElementById('incident-modal').classList.remove('hidden');
+        }
+
+        function closeIncidentModal() {
+            document.getElementById('incident-modal').classList.add('hidden');
+        }
+
+        function handleIncidentSubmit(e) {
+            e.preventDefault();
+            const projectId = document.getElementById('inc-project-select').value;
+            const type = document.getElementById('inc-type-select').value;
+            const description = document.getElementById('inc-desc-input').value.trim();
+            const reporter = currentUser ? currentUser.fullname : 'admin';
+            const time = new Date().toLocaleString('ar-SA');
+
+            if(!appState.incidents) appState.incidents = [];
+            appState.incidents.push({
+                id: `inc-${Date.now()}`,
+                projectId,
+                type,
+                description,
+                reporter,
+                time
+            });
+
+            saveData();
+            renderIncidentsTable();
+            closeIncidentModal();
+            alert('تم تسجيل البلاغ الطارئ وإرساله لغرفة العمليات المركزية بنجاح!');
+        }
+
+        function deleteIncident(id) {
+            if(confirm('هل أنت متأكد من إغلاق وحذف هذا البلاغ؟')) {
+                appState.incidents = (appState.incidents || []).filter(i => i.id !== id);
+                saveData();
+                renderIncidentsTable();
+            }
+        }
+
+        function renderInteractiveRadar() {
+            const selector = document.getElementById('radar-project-selector');
+            if(!selector) return;
+            const prjId = selector.value;
+            if(!prjId) return;
+
+            const prj = appState.projects.find(p => p.id === prjId);
+            if(!prj) return;
+
+            document.getElementById('radar-prj-title').innerText = prj.name;
+            document.getElementById('radar-prj-loc').innerText = `الموقع: ${prj.location} | المشرف المسؤول: ${prj.supervisor}`;
+            document.getElementById('radar-prj-shift-type').innerText = prj.shifts || '3 ورديات';
+
+            const guards = getGuardsForProject(prjId);
+            const dateVal = document.getElementById('attendance-date-input')?.value || new Date().toISOString().slice(0, 10);
+
+            let present = 0, absent = 0, leave = 0;
+            let shiftCounts = { shift1: 0, shift2: 0, shift3: 0 };
+
+            guards.forEach(g => {
+                const s = g.defaultShift || 'shift1';
+                if(shiftCounts[s] !== undefined) shiftCounts[s]++;
+
+                let st = 'present';
+                if(appState.attendance && appState.attendance[prjId] && appState.attendance[prjId][dateVal] && appState.attendance[prjId][dateVal][g.id]) {
+                    st = appState.attendance[prjId][dateVal][g.id].status;
+                }
+                if(st === 'absent') absent++;
+                else if(st === 'leave') leave++;
+                else present++;
+            });
+
+            document.getElementById('radar-total-active').innerText = guards.length + ' حراس';
+            document.getElementById('radar-present-count').innerText = present;
+            document.getElementById('radar-absent-count').innerText = absent;
+            document.getElementById('radar-leave-count').innerText = leave;
+
+            const listContainer = document.getElementById('radar-guards-list-container');
+            listContainer.innerHTML = '';
+            if(guards.length === 0) {
+                listContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">لا توجد حراس مسكنين في هذا المشروع.</p>';
+            } else {
+                guards.forEach(g => {
+                    const sNum = (g.defaultShift || 'shift1').replace('shift', '');
+                    listContainer.innerHTML += `
+                        <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs glow-card">
+                            <div class="flex items-center space-x-2 space-x-reverse">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-user-shield"></i></div>
+                                <div>
+                                    <span class="font-bold text-slate-800">${g.name}</span>
+                                    <span class="block text-[10px] font-mono text-slate-500">هوية: ${g.nationalId}</span>
+                                </div>
+                            </div>
+                            <span class="bg-amber-100 text-amber-900 font-bold px-2 py-1 rounded-lg text-[10px]">وردية ${sNum}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            const totalG = guards.length || 1;
+            const p1 = Math.round((shiftCounts.shift1 / totalG) * 100);
+            const p2 = Math.round((shiftCounts.shift2 / totalG) * 100);
+            const p3 = 100 - (p1 + p2);
+
+            const barsContainer = document.getElementById('radar-shifts-bars');
+            barsContainer.innerHTML = `
+                <div>
+                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                        <span><i class="fa-solid fa-sun text-amber-500 ml-1"></i> وردية 1 (${shiftCounts.shift1} حارس)</span>
+                        <span>${p1}%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                        <div class="bg-amber-500 h-2.5 rounded-full transition-all duration-500" style="width: ${p1}%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                        <span><i class="fa-solid fa-cloud-moon text-blue-500 ml-1"></i> وردية 2 (${shiftCounts.shift2} حارس)</span>
+                        <span>${p2}%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                        <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width: ${p2}%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                        <span><i class="fa-solid fa-moon text-indigo-700 ml-1"></i> وردية 3 (${shiftCounts.shift3} حارس)</span>
+                        <span>${p3}%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                        <div class="bg-indigo-700 h-2.5 rounded-full transition-all duration-500" style="width: ${p3}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // دوال المكتبة الرقمية التفاعلية المعتمدة
+        function openLibraryModal(type) {
+            const modal = document.getElementById('library-modal');
+            const titleEl = document.getElementById('lib-modal-title').querySelector('span');
+            const bodyEl = document.getElementById('lib-modal-body');
+
+            if (type === 'first-aid') {
+                titleEl.innerText = 'دليل الإسعافات الطارئة الميدانية (معتمد)';
+                bodyEl.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="bg-rose-50 p-3 rounded-xl border border-rose-200">
+                            <h4 class="font-bold text-rose-900 text-sm mb-1">1. حالات الإغماء وفقدان الوعي:</h4>
+                            <p class="text-xs text-rose-800">تأكد من مجرى الهواء، ارفع قدمي المصاب قليلاً لتسهيل تدفق الدم للدماغ، وفك أي ملابس ضيقة حول الرقبة، ولا تقم بإعطائه أي سوائل فموياً وهو فاقد للوعي.</p>
+                        </div>
+                        <div class="bg-amber-50 p-3 rounded-xl border border-amber-200">
+                            <h4 class="font-bold text-amber-900 text-sm mb-1">2. التعامل مع النزيف الحاد:</h4>
+                            <p class="text-xs text-rose-800">اضغط مباشرة وبقوة على مكان الجرح باستخدام قطعة قماش نظيفة أو شاش معقم حتى يتوقف النزيف، وارتدِ قفازات واقية لحماية نفسك.</p>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-xl border border-blue-200">
+                            <h4 class="font-bold text-amber-900 text-sm mb-1">3. ضربات الشمس والإجهاد الحراري:</h4>
+                            <p class="text-xs text-rose-800">انقل المصاب فوراً إلى منطقة مظللة وباردة، قم برش الماء الفاتر على جسمه لخفض حرارته، وأعطه ماءً بارداً إذا كان واعياً بالكامل.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'security-protocols') {
+                titleEl.innerText = 'البروتوكولات الأمنية والتعامل مع الطوارئ';
+                bodyEl.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="bg-blue-50 p-3 rounded-xl border border-blue-200">
+                            <h4 class="font-bold text-blue-900 text-sm mb-1">1. الاشتباه بجسم غريب أو طرد مشبوه:</h4>
+                            <p class="text-xs text-blue-800">أبعد الأشخاص عن المكان فوراً لمسافة لا تقل عن 100 متر، امنع استخدام الأجهزة اللاسلكية أو الهواتف بالقرب منه، وأبلغ غرفة العمليات والدفاع المدني فوراً.</p>
+                        </div>
+                        <div class="bg-purple-50 p-3 rounded-xl border border-purple-200">
+                            <h4 class="font-bold text-purple-900 text-sm mb-1">2. محاولات الاقتحام أو الاعتداء:</h4>
+                            <p class="text-xs text-rose-800">حافظ على هدوئك، انذر المعتدي بالتراجع شفهياً، استخدم أزرار الطوارئ أو تواصل مع مشرف الوردية والجهات الأمنية (999) مع توثيق الأوصاف بدقة.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'emergency-numbers') {
+                titleEl.innerText = 'دليل أرقام الطوارئ والجهات الرسمية بالمملكة';
+                bodyEl.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-slate-50 p-3 rounded-xl border flex items-center justify-between">
+                            <div><span class="block font-bold text-slate-800">الدفاع المدني</span><span class="text-[10px] text-slate-500">حرائق وإنقاذ</span></div>
+                            <span class="text-base font-extrabold text-rose-600 font-mono">998</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border flex items-center justify-between">
+                            <div><span class="block font-bold text-slate-800">الهلال الأحمر</span><span class="text-[10px] text-slate-500">إسعافات وطوارئ طبية</span></div>
+                            <span class="text-base font-extrabold text-rose-600 font-mono">997</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border flex items-center justify-between">
+                            <div><span class="block font-bold text-slate-800">الأمن العام (الشرطة)</span><span class="text-[10px] text-slate-500">بلاغات أمنية</span></div>
+                            <span class="text-base font-extrabold text-blue-600 font-mono">999</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border flex items-center justify-between">
+                            <div><span class="block font-bold text-slate-800">الطوارئ الموحد</span><span class="text-[10px] text-slate-500">منصة الطوارئ الوطنية</span></div>
+                            <span class="text-base font-extrabold text-emerald-600 font-mono">911</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeLibraryModal() {
+            document.getElementById('library-modal').classList.add('hidden');
+        }
+
+        function onAttendanceProjectChange() {
+            loadProjectAttendance();
+        }
+
+        function onShiftFilterChange(val) {
+            selectedFilterShift = val;
+            loadProjectAttendance();
+        }
+
+        function loadProjectAttendance() {
+            const prjId = document.getElementById('attendance-project-select').value;
+            const dateVal = document.getElementById('attendance-date-input').value;
+            const tbody = document.getElementById('attendance-table-body');
+            
+            if(!tbody) return;
+            tbody.innerHTML = '';
+
+            if (!prjId || !dateVal) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-400">الرجاء اختيار المشروع وتحديد التاريخ.</td></tr>';
+                return;
+            }
+
+            let guards = getGuardsForProject(prjId);
+            if (selectedFilterShift !== 'all') {
+                guards = guards.filter(g => (g.defaultShift || 'shift1') === selectedFilterShift);
+            }
+
+            if (!appState.attendance[prjId]) appState.attendance[prjId] = {};
+            if (!appState.attendance[prjId][dateVal]) appState.attendance[prjId][dateVal] = {};
+
+            if (guards.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">لا توجد حراس مسجلين في هذا المشروع.</td></tr>`;
+                return;
+            }
+
+            guards.forEach((g, idx) => {
+                const att = appState.attendance[prjId][dateVal][g.id] || { status: 'present', note: '', saved: false, coverGuard: '' };
+                const shiftNum = (g.defaultShift || 'shift1').replace('shift', '');
+                const shiftLabel = `${shiftNum}`;
+                
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4 font-bold text-slate-400">${idx + 1}</td>
+                        <td class="p-4 font-bold text-slate-800">${g.name} <br><span class="text-[11px] text-slate-400 font-mono">هوية: ${g.nationalId}</span></td>
+                        <td class="p-4 font-mono text-slate-700">${g.phone || '-'}</td>
+                        <td class="p-4"><span class="font-bold px-2.5 py-1 rounded-xl text-xs border bg-amber-50 text-amber-900">${shiftLabel}</span></td>
+                        <td class="p-4">
+                            <select id="status_${g.id}" class="p-2 border border-slate-300 rounded-xl font-bold text-xs bg-white">
+                                <option value="present" ${att.status === 'present' ? 'selected' : ''}>🟢 حاضر</option>
+                                <option value="absent" ${att.status === 'absent' ? 'selected' : ''}>🔴 غائب</option>
+                                <option value="leave" ${att.status === 'leave' ? 'selected' : ''}>🟡 إجازة</option>
+                                <option value="late" ${att.status === 'late' ? 'selected' : ''}>🔵 متأخر</option>
+                            </select>
+                        </td>
+                        <td class="p-4">
+                            <input type="text" id="cover_${g.id}" value="${att.coverGuard || ''}" placeholder="اسم البديل إن وجد (Cover)..." class="w-full p-2 border border-slate-200 rounded-xl text-xs bg-amber-50/50">
+                        </td>
+                    </tr>
+                `;
+            });
+
+            const auditEl = document.getElementById('attendance-audit-info');
+            if (auditEl) {
+                if (appState.attendance[prjId][dateVal] && Object.values(appState.attendance[prjId][dateVal]).some(i => i.saved)) {
+                    auditEl.innerHTML = `<i class="fa-solid fa-shield-check text-emerald-600 ml-1"></i> تم اعتماد التحضير بواسطة: <strong>${currentUser ? currentUser.fullname : 'admin'}</strong>`;
+                } else {
+                    auditEl.innerHTML = `<i class="fa-solid fa-circle-exclamation text-amber-500 ml-1"></i> لم يتم الاعتماد بعد لهذا التاريخ`;
+                }
+            }
+        }
+
+        function setAllGuardsPresent() {
+            const prjId = document.getElementById('attendance-project-select').value;
+            const dateVal = document.getElementById('attendance-date-input').value;
+            if (!prjId || !dateVal) {
+                alert('الرجاء اختيار المشروع وتاريخ التحضير أولاً.');
+                return;
+            }
+            let guards = getGuardsForProject(prjId);
+            if (selectedFilterShift !== 'all') {
+                guards = guards.filter(g => (g.defaultShift || 'shift1') === selectedFilterShift);
+            }
+            guards.forEach(g => {
+                const statusEl = document.getElementById(`status_${g.id}`);
+                if (statusEl) {
+                    statusEl.value = 'present';
+                }
+            });
+        }
+
+        function approveAllProjectsBatch() {
+            const dateVal = document.getElementById('attendance-date-input').value;
+            if (!dateVal) {
+                alert('الرجاء تحديد تاريخ التحضير أولاً.');
+                return;
+            }
+            if (!confirm('هل أنت متأكد من اعتماد التحضير اليومي لكافة المشاريع دفعة واحدة كـ (حاضر)؟')) return;
+
+            const timestamp = new Date().toLocaleString('ar-SA');
+            const approverName = currentUser ? currentUser.fullname : 'admin';
+
+            appState.projects.forEach(prj => {
+                if (!appState.attendance[prj.id]) appState.attendance[prj.id] = {};
+                if (!appState.attendance[prj.id][dateVal]) appState.attendance[prj.id][dateVal] = {};
+
+                const guards = getGuardsForProject(prj.id);
+                guards.forEach(g => {
+                    appState.attendance[prj.id][dateVal][g.id] = {
+                        status: 'present',
+                        note: 'اعتماد شامل تلقائي',
+                        saved: true,
+                        updatedBy: approverName,
+                        updatedAt: timestamp,
+                        coverGuard: ''
+                    };
+                });
+            });
+
+            saveData();
+            loadProjectAttendance();
+            renderDashboard();
+            renderInteractiveRadar();
+            alert(`تم اعتماد التحضير الشامل لكافة المشاريع بنجاح بواسطة (${approverName})!`);
+        }
+
+        function saveAndApproveAttendance() {
+            const prjId = document.getElementById('attendance-project-select').value;
+            const dateVal = document.getElementById('attendance-date-input').value;
+            if (!prjId || !dateVal) return;
+
+            let guards = getGuardsForProject(prjId);
+            if (!appState.attendance[prjId]) appState.attendance[prjId] = {};
+            if (!appState.attendance[prjId][dateVal]) appState.attendance[prjId][dateVal] = {};
+
+            const timestamp = new Date().toLocaleString('ar-SA');
+            const approverName = currentUser ? currentUser.fullname : 'admin';
+
+            guards.forEach(g => {
+                const statusEl = document.getElementById(`status_${g.id}`);
+                const noteEl = document.getElementById(`cover_${g.id}`);
+                if (statusEl) {
+                    appState.attendance[prjId][dateVal][g.id] = { 
+                        status: statusEl.value, 
+                        coverGuard: noteEl ? noteEl.value.trim() : '', 
+                        saved: true,
+                        updatedBy: approverName,
+                        updatedAt: timestamp
+                    };
+                }
+            });
+            saveData();
+            loadProjectAttendance();
+            renderDashboard();
+            renderInteractiveRadar();
+            alert('تم حفظ واعتماد التحضير وتحديث بيانات التبديل والغطاء بنجاح عبر السحابة!');
+        }
+
+        function exportSystemBackupJson() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `Amn_AlOtan_Backup_${new Date().toISOString().slice(0, 10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function exportAttendancePDF() {
+            const prjId = document.getElementById('attendance-project-select').value;
+            const dateVal = document.getElementById('attendance-date-input').value;
+            if (!prjId) { alert('الرجاء اختيار المشروع أولاً'); return; }
+            const prj = appState.projects.find(p => p.id === prjId);
+            const guards = getGuardsForProject(prjId);
+            const cLogo = appState.settings?.companyLogo || 'watermarked_img_8448020907437168992.jpg';
+            const pLogo = prj.logo || 'ah.png';
+
+            let html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>تحضير الحراس - ${prj.name}</title><style>
+                body { font-family: 'Cairo', sans-serif; padding: 25px; direction: rtl; color: #1e293b; font-size: 15px; }
+                .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 20px; }
+                .logo-img { width: 75px; height: 75px; object-fit: cover; border-radius: 50%; border: 1px solid #cbd5e1; }
+                .report-title { text-align: center; flex: 1; }
+                .report-title h2 { font-size: 20px; font-weight: bold; color: #1e3a8a; margin: 0 0 6px 0; }
+                .report-title p { font-size: 14px; color: #475569; margin: 4px 0; font-weight: 600; }
+                table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+                th, td { border: 1px solid #64748b; padding: 10px; text-align: center; }
+                th { background: #f1f5f9; font-weight: bold; font-size: 15px; }
+            </style></head><body>`;
+            
+            html += `<div class="report-header">
+                <img src="${cLogo}" alt="شعار أمن الأوطان" class="logo-img" onerror="this.style.display='none'">
+                <div class="report-title">
+                    <h2>منصة أمن الأوطان - إدارة الحراسات الأمنية</h2>
+                    <p>كشف التحضير الميداني - مشروع: ${prj.name} (التاريخ: ${dateVal})</p>
+                    <p>الموقع: ${prj.location} | المشرف المسؤول: ${prj.supervisor}</p>
+                </div>
+                <img src="${pLogo}" alt="شعار المشروع" class="logo-img" onerror="this.style.display='none'">
+            </div>`;
+
+            html += `<table><thead><tr><th>#</th><th>اسم الحارس</th><th>الهوية الوطنية</th><th>الوردية</th><th>الحالة اليومية</th><th>البديل (Cover)</th></tr></thead><tbody>`;
+
+            guards.forEach((g, idx) => {
+                let st = 'حاضر';
+                let cover = '-';
+                if(appState.attendance[prjId] && appState.attendance[prjId][dateVal] && appState.attendance[prjId][dateVal][g.id]) {
+                    const record = appState.attendance[prjId][dateVal][g.id];
+                    const s = record.status;
+                    if(s === 'absent') st = 'غائب'; else if(s === 'leave') st = 'إجازة'; else if(s === 'late') st = 'متأخر';
+                    if(record.coverGuard) cover = record.coverGuard;
+                }
+                const shiftNum = (g.defaultShift || 'shift1').replace('shift', '');
+                const sLabel = `${shiftNum}`;
+                html += `<tr><td>${idx+1}</td><td style="text-align:right;font-weight:bold;">${g.name}</td><td>${g.nationalId}</td><td><b>${sLabel}</b></td><td>${st}</td><td>${cover}</td></tr>`;
+            });
+            html += `</tbody></table></body></html>`;
+
+            const win = window.open('', '_blank');
+            if (win) { win.document.write(html); win.document.close(); win.focus(); setTimeout(() => win.print(), 500); }
+        }
+
+        function exportAttendanceExcel() {
+            const prjId = document.getElementById('attendance-project-select').value;
+            const dateVal = document.getElementById('attendance-date-input').value;
+            if (!prjId) { alert('الرجاء اختيار المشروع أولاً'); return; }
+            const prj = appState.projects.find(p => p.id === prjId);
+            const guards = getGuardsForProject(prjId);
+
+            let csv = `\uFEFFالرقم,اسم الحارس,رقم الهوية,رقم الجوال,الوردية,الحالة في تاريخ ${dateVal},البديل (Cover)\n`;
+            guards.forEach((g, idx) => {
+                let st = 'حاضر';
+                let cover = '';
+                if(appState.attendance[prjId] && appState.attendance[prjId][dateVal] && appState.attendance[prjId][dateVal][g.id]) {
+                    const record = appState.attendance[prjId][dateVal][g.id];
+                    const s = record.status;
+                    if(s === 'absent') st = 'غائب'; else if(s === 'leave') st = 'إجازة'; else if(s === 'late') st = 'متأخر';
+                    if(record.coverGuard) cover = record.coverGuard;
+                }
+                const shiftNum = (g.defaultShift || 'shift1').replace('shift', '');
+                const sLabel = `${shiftNum}`;
+                csv += `${idx+1},"${g.name}","${g.nationalId}","${g.phone}","${sLabel}","${st}","${cover}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Attendance_${prj.name}_${dateVal}.csv`;
+            a.click();
+        }
+
+        function getDaysInCurrentMonth() {
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const daysCount = new Date(year, month + 1, 0).getDate();
+            const daysArr = [];
+            for (let i = 1; i <= daysCount; i++) {
+                const dayStr = String(i).padStart(2, '0');
+                const monthStr = String(month + 1).padStart(2, '0');
+                daysArr.push(`${year}-${monthStr}-${dayStr}`);
+            }
+            return daysArr;
+        }
+
+        function loadProjectReport() {
+            const prjId = document.getElementById('report-project-select').value;
+            const headRow = document.getElementById('report-table-head-row');
+            const tbody = document.getElementById('project-report-body');
+            if (!headRow || !tbody) return;
+
+            headRow.innerHTML = `<th class="p-2 border">#</th><th class="p-2 border">اسم الحارس</th><th class="p-2 border bg-amber-50">الوردية</th>`;
+            tbody.innerHTML = '';
+
+            if (!prjId) return;
+
+            const monthDays = getDaysInCurrentMonth();
+            monthDays.forEach((day, idx) => {
+                headRow.innerHTML += `<th class="p-1 border text-center text-[9px]">${idx+1}</th>`;
+            });
+
+            const prj = appState.projects.find(p => p.id === prjId);
+            const guards = getGuardsForProject(prjId);
+
+            if (guards.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-400">لا توجد حراس مسجلين.</td></tr>';
+                return;
+            }
+
+            guards.forEach((g, idx) => {
+                const shiftNum = (g.defaultShift || 'shift1').replace('shift', '');
+                const sLabel = `${shiftNum}`;
+                let trHtml = `<tr><td class="p-2 border font-bold">${idx + 1}</td><td class="p-2 border font-bold">${g.name}</td><td class="p-2 border bg-amber-50 font-bold">${sLabel}</td>`;
+
+                monthDays.forEach(day => {
+                    let stSym = '-';
+                    if (appState.attendance[prjId] && appState.attendance[prjId][day] && appState.attendance[prjId][day][g.id]) {
+                        const st = appState.attendance[prjId][day][g.id].status;
+                        if (st === 'present') stSym = 'ح';
+                        else if (st === 'absent') stSym = 'غ';
+                        else if (st === 'leave') stSym = 'إ';
+                        else if (st === 'late') stSym = 'ت';
+                    }
+                    trHtml += `<td class="p-1 border text-center font-semibold text-[10px]">${stSym}</td>`;
+                });
+
+                trHtml += `</tr>`;
+                tbody.innerHTML += trHtml;
+            });
+        }
+
+        function openBankDetailsModal() {
+            const prjId = document.getElementById('report-project-select').value;
+            if (!prjId) { alert('الرجاء اختيار المشروع أولاً'); return; }
+            const prj = appState.projects.find(p => p.id === prjId);
+            const guards = getGuardsForProject(prjId);
+            
+            document.getElementById('bank-modal-title').innerText = `بيان المعلومات البنكية وحراس مشروع: ${prj ? prj.name : ''}`;
+            const tbody = document.getElementById('bank-modal-body');
+            tbody.innerHTML = '';
+
+            if (guards.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-400">لا توجد حراس مسجلين لهذا المشروع.</td></tr>';
+            } else {
+                guards.forEach((g, idx) => {
+                    const shiftNum = (g.defaultShift || 'shift1').replace('shift', '');
+                    const sLabel = `${shiftNum}`;
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="p-2 border font-bold text-slate-400">${idx + 1}</td>
+                            <td class="p-2 border font-bold text-slate-800">${g.name}</td>
+                            <td class="p-2 border font-mono">${g.nationalId}</td>
+                            <td class="p-2 border font-mono text-blue-800">${g.iban || 'غير متوفر'}</td>
+                            <td class="p-2 border font-bold bg-amber-50 text-amber-900">${sLabel}</td>
+                            <td class="p-2 border font-semibold text-slate-700">${prj.name}</td>
+                        </tr>
+                    `;
+                });
+            }
+            document.getElementById('bank-details-modal').classList.remove('hidden');
+        }
+
+        function closeBankDetailsModal() {
+            document.getElementById('bank-details-modal').classList.add('hidden');
+        }
+
+        function exportBankModalPDF() {
+            const prjId = document.getElementById('report-project-select').value;
+            if (!prjId) return;
+            const prj = appState.projects.find(p => p.id === prjId);
+            const guards = getGuardsForProject(prjId);
+            const cLogo = appState.settings?.companyLogo || 'watermarked_img_8448020907437168992.jpg';
+            const pLogo = prj.logo || 'ah.png';
+
+            let html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>المعلومات البنكية - ${prj.name}</title><style>
+                body { font-family: 'Cairo', sans-serif; padding: 25px; direction: rtl; color: #1e293b; font-size: 15px; }
+                .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 20px; }
+                .logo-img { width: 75px; height: 75px; object-fit: cover; border-radius: 50%; border: 1px solid #cbd5e1; }
+                .report-title { text-align: center; flex: 1; }
+                .report-title h2 { font-size: 18px; font-weight: bold; color: #1e3a8a; margin: 0 0 5px 0; }
+                .report-title p { font-size: 13px; color: #475569; margin: 4px 0; font-weight: 600; }
+                table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+                th, td { border: 1px solid #64748b; padding: 10px; text-align: center; }
+                th { background: #f1f5f9; font-weight: bold; font-size: 15px; }
+            </style></head><body>`;
+            
+            html += `<div class="report-header">
+                <img src="${cLogo}" alt="شعار أمن الأوطان" class="logo-img" onerror="this.style.display='none'">
+                <div class="report-title">
+                    <h2>منصة أمن الأوطان - إدارة الحراسات الأمنية</h2>
+                    <p>بيان المعلومات البنكية والحراس - مشروع: ${prj.name}</p>
+                    <p>الموقع: ${prj.location} | التاريخ: ${new Date().toLocaleDateString('ar-SA')}</p>
+                </div>
+                <img src="${pLogo}" alt="شعار المشروع" class="logo-img" onerror="this.style.display='none'">
+            </div>`;
+
+            html += `<table><thead><tr><th>#</th><th>اسم الحارس</th><th>رقم الهوية الوطنية</th><th>رقم الآيبان (IBAN)</th><th>الوردية</th><th>اسم المشروع</th></tr></thead><tbody>`;
+
+            guards.forEach((g, idx) => {
+                const shiftNum = (g.defaultShift || 'shift1').replace('shift', '');
+                const sLabel = `${shiftNum}`;
+                html += `<tr><td>${idx+1}</td><td style="text-align:right;font-weight:bold;">${g.name}</td><td>${g.nationalId}</td><td>${g.iban || '-'}</td><td><b>${sLabel}</b></td><td>${prj.name}</td></tr>`;
+            });
+            html += `</tbody></table></body></html>`;
+
+            const win = window.open('', '_blank');
+            if (win) { win.document.write(html); win.document.close(); win.focus(); setTimeout(() => win.print(), 500); }
+        }
+
+        function exportBankModalExcel() {
+            const prjId = document.getElementById('report-project-select').value;
+            if (!prjId) return;
+            const prj = appState.projects.find(p => p.id === prjId);
+            const guards = getGuardsForProject(prjId);
+
+            let csv = '\uFEFFالرقم,اسم الحارس,رقم الهوية الوطنية,رقم الآيبان IBAN,الوردية,اسم المشروع\n';
+            guards.forEach((g, idx) => {
+                const shiftNum = (g.defaultShift || 'shift1').replace('shift', '');
+                const sLabel = `${shiftNum}`;
+                csv += `${idx+1},"${g.name}","${g.nationalId}","${g.iban || ''}","${sLabel}","${prj.name}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Bank_Information_${prj.name}.csv`;
+            a.click();
+        }
+
+        function exportReportPDF() {
+            const prjId = document.getElementById('report-project-select').value;
+            if (!prjId) return;
+            const prj = appState.projects.find(p => p.id === prjId);
+            const guards = getGuardsForProject(prjId);
+            const monthDays = getDaysInCurrentMonth();
+            const cLogo = appState.settings?.companyLogo || 'watermarked_img_8448020907437168992.jpg';
+            const pLogo = prj.logo || 'ah.png';
+
+            let html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>تقرير التايم شيت</title><style>
+                body { font-family: 'Cairo', sans-serif; padding: 15px; direction: rtl; color: #1e293b; font-size: 14px; }
+                .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 15px; }
+                .logo-img { width: 70px; height: 70px; object-fit: cover; border-radius: 50%; border: 1px solid #cbd5e1; }
+                .report-title { text-align: center; flex: 1; }
+                .report-title h2 { font-size: 18px; font-weight: bold; color: #1e3a8a; margin: 0 0 5px 0; }
+                .report-title p { font-size: 13px; color: #475569; margin: 3px 0; font-weight: 600; }
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+                th, td { border: 1px solid #64748b; padding: 6px 4px; text-align: center; }
+                th { background: #f1f5f9; font-weight: bold; font-size: 13px; }
+                .name-col { text-align: right; font-weight: bold; min-width: 130px; font-size: 13px; }
+            </style></head><body>`;
+            
+            html += `<div class="report-header">
+                <img src="${cLogo}" alt="شعار أمن الأوطان" class="logo-img" onerror="this.style.display='none'">
+                <div class="report-title">
+                    <h2>منصة أمن الأوطان - إدارة الحراسات الأمنية</h2>
+                    <p>تقرير الحضور الشهري (التايم شيت) - مشروع: ${prj.name}</p>
+                    <p>الموقع: ${prj.location} | تاريخ الإصدار: ${new Date().toLocaleDateString('ar-SA')}</p>
+                </div>
+                <img src="${pLogo}" alt="شعار المشروع" class="logo-img" onerror="this.style.display='none'">
+            </div>`;
+
+            html += `<table><thead><tr><th>#</th><th class="name-col">الحارس</th><th>الوردية</th>`;
+            monthDays.forEach((d, i) => html += `<th>${i+1}</th>`);
+            html += `</tr></thead><tbody>`;
+
+            guards.forEach((g, idx) => {
+                const shiftNum = (g.defaultShift || 'shift1').replace('shift', '');
+                const sLabel = `${shiftNum}`;
+                html += `<tr><td>${idx+1}</td><td class="name-col">${g.name}</td><td><b>${sLabel}</b></td>`;
+                monthDays.forEach(day => {
+                    let st = '-';
+                    if (appState.attendance[prjId] && appState.attendance[prjId][day] && appState.attendance[prjId][day][g.id]) {
+                        const s = appState.attendance[prjId][day][g.id].status;
+                        if (s === 'present') st = 'ح'; else if (s === 'absent') st = 'غ'; else if (s === 'leave') st = 'إ'; else if (s === 'late') st = 'ت';
+                    }
+                    html += `<td>${st}</td>`;
+                });
+                html += `</tr>`;
+            });
+            html += `</tbody></table></body></html>`;
+
+            const win = window.open('', '_blank');
+            if (win) { win.document.write(html); win.document.close(); win.focus(); setTimeout(() => win.print(), 500); }
+        }
+
+        function exportReportExcel() {
+            const prjId = document.getElementById('report-project-select').value;
+            if (!prjId) return;
+            const prj = appState.projects.find(p => p.id === prjId);
+            const guards = getGuardsForProject(prjId);
+            const monthDays = getDaysInCurrentMonth();
+
+            let csv = '\uFEFFالرقم,اسم الحارس,الوردية,الهوية,الإيبان,الجوال';
+            monthDays.forEach((d, i) => csv += `,اليوم ${i+1}`);
+            csv += '\n';
+
+            guards.forEach((g, idx) => {
+                const shiftNum = (g.defaultShift || 'shift1').replace('shift', '');
+                const sLabel = `${shiftNum}`;
+                csv += `${idx+1},"${g.name}","${sLabel}","${g.nationalId}","${g.iban || ''}","${g.phone}"`;
+                monthDays.forEach(day => {
+                    let st = '-';
+                    if (appState.attendance[prjId] && appState.attendance[prjId][day] && appState.attendance[prjId][day][g.id]) {
+                        const s = appState.attendance[prjId][day][g.id].status;
+                        if (s === 'present') st = 'حاضر'; else if (s === 'absent') st = 'غائب'; else if (s === 'leave') st = 'إجازة'; else if(s === 'late') st = 'متأخر';
+                    }
+                    csv += `,"${st}"`;
+                });
+                csv += '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Timesheet_${prj.name}.csv`;
+            a.click();
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
